@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:18beta1-alpine
+    container_name: md-todo-db
+    environment:
+      POSTGRES_DB: md_todo_dev
+      POSTGRES_USER: md_todo_user
+      POSTGRES_PASSWORD: md_todo_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+
+  # Backend API (Rust + axum)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: md-todo-backend
+    environment:
+      DATABASE_URL: postgres://md_todo_user:md_todo_password@db:5432/md_todo_dev
+      RUST_LOG: debug
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - cargo_cache:/usr/local/cargo/registry
+      - target_cache:/app/target
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  # Frontend (React + Remix)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: md-todo-frontend
+    environment:
+      API_URL: http://backend:8000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  cargo_cache:
+  target_cache:
+
+networks:
+  app-network:
+    driver: bridge

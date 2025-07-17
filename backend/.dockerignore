@@ -1,0 +1,26 @@
+# Rust build artifacts
+target/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
