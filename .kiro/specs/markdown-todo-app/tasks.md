@@ -15,7 +15,7 @@
     - テスト環境のセットアップ
     - _要件: 1.1_
 
-  - [ ] 1.3 Docker 開発環境の構築
+  - [x] 1.3 Docker 開発環境の構築
     - フロントエンド用 Dockerfile の作成
     - バックエンド用 Dockerfile の作成
     - PostgreSQL コンテナの設定
