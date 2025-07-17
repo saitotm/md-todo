@@ -9,7 +9,7 @@ use tower::ServiceExt;
 #[tokio::test]
 async fn test_health_check() {
     let app = create_app();
-    
+
     let response = app
         .oneshot(
             Request::builder()
@@ -19,17 +19,19 @@ async fn test_health_check() {
         )
         .await
         .unwrap();
-    
+
     assert_eq!(response.status(), StatusCode::OK);
-    
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     assert_eq!(&body[..], b"OK");
 }
 
 #[tokio::test]
 async fn test_get_todos_empty() {
     let app = create_app();
-    
+
     let response = app
         .oneshot(
             Request::builder()
@@ -39,12 +41,14 @@ async fn test_get_todos_empty() {
         )
         .await
         .unwrap();
-    
+
     assert_eq!(response.status(), StatusCode::OK);
-    
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let api_response: ApiResponse<Vec<Todo>> = serde_json::from_slice(&body).unwrap();
-    
+
     assert!(api_response.success);
     assert_eq!(api_response.data.unwrap().len(), 0);
 }
@@ -52,12 +56,12 @@ async fn test_get_todos_empty() {
 #[tokio::test]
 async fn test_create_todo() {
     let app = create_app();
-    
+
     let create_request = CreateTodoRequest {
         title: "Test Todo".to_string(),
         content: "Test content".to_string(),
     };
-    
+
     let response = app
         .oneshot(
             Request::builder()
@@ -69,12 +73,14 @@ async fn test_create_todo() {
         )
         .await
         .unwrap();
-    
+
     assert_eq!(response.status(), StatusCode::OK);
-    
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let api_response: ApiResponse<Todo> = serde_json::from_slice(&body).unwrap();
-    
+
     assert!(api_response.success);
     let todo = api_response.data.unwrap();
     assert_eq!(todo.title, "Test Todo");
@@ -85,7 +91,7 @@ async fn test_create_todo() {
 #[tokio::test]
 async fn test_get_todo_not_found() {
     let app = create_app();
-    
+
     let response = app
         .oneshot(
             Request::builder()
@@ -95,20 +101,20 @@ async fn test_get_todo_not_found() {
         )
         .await
         .unwrap();
-    
+
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
 }
 
 #[tokio::test]
 async fn test_crud_operations() {
     let app = create_app();
-    
+
     // Create a todo
     let create_request = CreateTodoRequest {
         title: "CRUD Test".to_string(),
         content: "Testing CRUD operations".to_string(),
     };
-    
+
     let response = app
         .clone()
         .oneshot(
@@ -121,14 +127,16 @@ async fn test_crud_operations() {
         )
         .await
         .unwrap();
-    
+
     assert_eq!(response.status(), StatusCode::OK);
-    
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let api_response: ApiResponse<Todo> = serde_json::from_slice(&body).unwrap();
     let todo = api_response.data.unwrap();
     let todo_id = todo.id;
-    
+
     // Get the todo
     let response = app
         .clone()
@@ -140,15 +148,15 @@ async fn test_crud_operations() {
         )
         .await
         .unwrap();
-    
+
     assert_eq!(response.status(), StatusCode::OK);
-    
+
     // Update the todo
     let update_request = json!({
         "title": "Updated CRUD Test",
         "completed": true
     });
-    
+
     let response = app
         .clone()
         .oneshot(
@@ -161,16 +169,18 @@ async fn test_crud_operations() {
         )
         .await
         .unwrap();
-    
+
     assert_eq!(response.status(), StatusCode::OK);
-    
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let api_response: ApiResponse<Todo> = serde_json::from_slice(&body).unwrap();
     let updated_todo = api_response.data.unwrap();
-    
+
     assert_eq!(updated_todo.title, "Updated CRUD Test");
     assert!(updated_todo.completed);
-    
+
     // Delete the todo
     let response = app
         .clone()
@@ -183,9 +193,9 @@ async fn test_crud_operations() {
         )
         .await
         .unwrap();
-    
+
     assert_eq!(response.status(), StatusCode::NO_CONTENT);
-    
+
     // Verify it's deleted
     let response = app
         .oneshot(
@@ -196,6 +206,6 @@ async fn test_crud_operations() {
         )
         .await
         .unwrap();
-    
+
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
 }

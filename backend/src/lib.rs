@@ -2,16 +2,16 @@ use axum::{
     extract::Path,
     http::StatusCode,
     response::Json,
-    routing::{get, post, put, delete},
+    routing::{delete, get, post, put},
     Router,
 };
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use tokio::sync::RwLock;
 use std::sync::Arc;
-use uuid::Uuid;
-use chrono::{DateTime, Utc};
+use tokio::sync::RwLock;
 use tower_http::cors::CorsLayer;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Todo {
@@ -90,7 +90,7 @@ pub async fn create_todo(
 
     let mut todos = store.write().await;
     todos.insert(todo.id, todo.clone());
-    
+
     Ok(Json(ApiResponse::success(todo)))
 }
 
@@ -99,7 +99,7 @@ pub async fn get_todo(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
     let todos = store.read().await;
-    
+
     match todos.get(&id) {
         Some(todo) => Ok(Json(ApiResponse::success(todo.clone()))),
         None => Err(StatusCode::NOT_FOUND),
@@ -112,7 +112,7 @@ pub async fn update_todo(
     Json(request): Json<UpdateTodoRequest>,
 ) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
     let mut todos = store.write().await;
-    
+
     match todos.get_mut(&id) {
         Some(todo) => {
             if let Some(title) = request.title {
@@ -125,7 +125,7 @@ pub async fn update_todo(
                 todo.completed = completed;
             }
             todo.updated_at = Utc::now();
-            
+
             Ok(Json(ApiResponse::success(todo.clone())))
         }
         None => Err(StatusCode::NOT_FOUND),
@@ -137,7 +137,7 @@ pub async fn delete_todo(
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
     let mut todos = store.write().await;
-    
+
     match todos.remove(&id) {
         Some(_) => Ok(StatusCode::NO_CONTENT),
         None => Err(StatusCode::NOT_FOUND),
