@@ -97,4 +97,4 @@ jobs:
       run: docker build -t md-todo-backend ./backend
     
     - name: Test docker-compose build
-      run: docker-compose build
+      run: docker compose build
