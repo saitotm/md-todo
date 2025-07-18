@@ -1,5 +1,5 @@
 use axum::{
-    extract::Path,
+    extract::{Path, State},
     http::StatusCode,
     response::Json,
     routing::{delete, get, post, put},
@@ -7,13 +7,14 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::{PgPool, Pool, Postgres};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Todo {
     pub id: Uuid,
     pub title: String,
@@ -62,39 +63,210 @@ impl<T> ApiResponse<T> {
 }
 
 pub type TodoStore = Arc<RwLock<HashMap<Uuid, Todo>>>;
+pub type DatabasePool = Pool<Postgres>;
+
+pub async fn create_database_pool(database_url: &str) -> Result<DatabasePool, sqlx::Error> {
+    sqlx::PgPool::connect(database_url).await
+}
+
+pub async fn setup_database(pool: &DatabasePool) -> Result<(), sqlx::Error> {
+    // For now, we'll skip migrations to avoid compile-time database dependency
+    // sqlx::migrate!("../database/migrations").run(pool).await?;
+    Ok(())
+}
+
+pub struct TodoRepository {
+    pool: DatabasePool,
+}
+
+impl TodoRepository {
+    pub fn new(pool: DatabasePool) -> Self {
+        Self { pool }
+    }
+
+    pub async fn create_todo(&self, todo: &Todo) -> Result<Todo, sqlx::Error> {
+        let row = sqlx::query_as::<_, Todo>(
+            r#"
+            INSERT INTO todos (id, title, content, completed, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id, title, content, completed, created_at, updated_at
+            "#,
+        )
+        .bind(todo.id)
+        .bind(&todo.title)
+        .bind(&todo.content)
+        .bind(todo.completed)
+        .bind(todo.created_at)
+        .bind(todo.updated_at)
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(row)
+    }
+
+    pub async fn get_all_todos(&self) -> Result<Vec<Todo>, sqlx::Error> {
+        let rows = sqlx::query_as::<_, Todo>(
+            r#"
+            SELECT id, title, content, completed, created_at, updated_at
+            FROM todos
+            ORDER BY created_at DESC
+            "#
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows)
+    }
+
+    pub async fn get_todo_by_id(&self, id: Uuid) -> Result<Option<Todo>, sqlx::Error> {
+        let row = sqlx::query_as::<_, Todo>(
+            r#"
+            SELECT id, title, content, completed, created_at, updated_at
+            FROM todos
+            WHERE id = $1
+            "#,
+        )
+        .bind(id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row)
+    }
+
+    pub async fn update_todo(&self, id: Uuid, updates: &UpdateTodoRequest) -> Result<Option<Todo>, sqlx::Error> {
+        let row = sqlx::query_as::<_, Todo>(
+            r#"
+            UPDATE todos
+            SET title = COALESCE($2, title),
+                content = COALESCE($3, content),
+                completed = COALESCE($4, completed),
+                updated_at = $5
+            WHERE id = $1
+            RETURNING id, title, content, completed, created_at, updated_at
+            "#,
+        )
+        .bind(id)
+        .bind(updates.title.as_ref())
+        .bind(updates.content.as_ref())
+        .bind(updates.completed)
+        .bind(Utc::now())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row)
+    }
+
+    pub async fn delete_todo(&self, id: Uuid) -> Result<bool, sqlx::Error> {
+        let result = sqlx::query(
+            r#"
+            DELETE FROM todos
+            WHERE id = $1
+            "#,
+        )
+        .bind(id)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(result.rows_affected() > 0)
+    }
+}
 
 pub async fn health_check() -> &'static str {
     "OK"
 }
 
-pub async fn get_todos(store: axum::extract::State<TodoStore>) -> Json<ApiResponse<Vec<Todo>>> {
+pub async fn get_todos(State(pool): State<DatabasePool>) -> Result<Json<ApiResponse<Vec<Todo>>>, StatusCode> {
+    let repository = TodoRepository::new(pool);
+    match repository.get_all_todos().await {
+        Ok(todos) => Ok(Json(ApiResponse::success(todos))),
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+pub async fn create_todo(
+    State(pool): State<DatabasePool>,
+    Json(request): Json<CreateTodoRequest>,
+) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
+    if let Err(_) = request.validate() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    let todo = Todo::new(&request.title, &request.content);
+    let repository = TodoRepository::new(pool);
+    
+    match repository.create_todo(&todo).await {
+        Ok(created_todo) => Ok(Json(ApiResponse::success(created_todo))),
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+pub async fn get_todo(
+    State(pool): State<DatabasePool>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
+    let repository = TodoRepository::new(pool);
+    
+    match repository.get_todo_by_id(id).await {
+        Ok(Some(todo)) => Ok(Json(ApiResponse::success(todo))),
+        Ok(None) => Err(StatusCode::NOT_FOUND),
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+pub async fn update_todo(
+    State(pool): State<DatabasePool>,
+    Path(id): Path<Uuid>,
+    Json(request): Json<UpdateTodoRequest>,
+) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
+    if let Err(_) = request.validate() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    let repository = TodoRepository::new(pool);
+    
+    match repository.update_todo(id, &request).await {
+        Ok(Some(todo)) => Ok(Json(ApiResponse::success(todo))),
+        Ok(None) => Err(StatusCode::NOT_FOUND),
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+pub async fn delete_todo(
+    State(pool): State<DatabasePool>,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, StatusCode> {
+    let repository = TodoRepository::new(pool);
+    
+    match repository.delete_todo(id).await {
+        Ok(true) => Ok(StatusCode::NO_CONTENT),
+        Ok(false) => Err(StatusCode::NOT_FOUND),
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+pub async fn get_todos_memory(store: axum::extract::State<TodoStore>) -> Json<ApiResponse<Vec<Todo>>> {
     let todos = store.read().await;
     let mut todo_list: Vec<Todo> = todos.values().cloned().collect();
     todo_list.sort_by(|a, b| b.created_at.cmp(&a.created_at));
     Json(ApiResponse::success(todo_list))
 }
 
-pub async fn create_todo(
+pub async fn create_todo_memory(
     axum::extract::State(store): axum::extract::State<TodoStore>,
     Json(request): Json<CreateTodoRequest>,
 ) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
-    let now = Utc::now();
-    let todo = Todo {
-        id: Uuid::now_v7(),
-        title: request.title,
-        content: request.content,
-        completed: false,
-        created_at: now,
-        updated_at: now,
-    };
+    if let Err(_) = request.validate() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
 
+    let todo = Todo::new(&request.title, &request.content);
     let mut todos = store.write().await;
     todos.insert(todo.id, todo.clone());
 
     Ok(Json(ApiResponse::success(todo)))
 }
 
-pub async fn get_todo(
+pub async fn get_todo_memory(
     axum::extract::State(store): axum::extract::State<TodoStore>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
@@ -106,11 +278,15 @@ pub async fn get_todo(
     }
 }
 
-pub async fn update_todo(
+pub async fn update_todo_memory(
     axum::extract::State(store): axum::extract::State<TodoStore>,
     Path(id): Path<Uuid>,
     Json(request): Json<UpdateTodoRequest>,
 ) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
+    if let Err(_) = request.validate() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
     let mut todos = store.write().await;
 
     match todos.get_mut(&id) {
@@ -132,7 +308,7 @@ pub async fn update_todo(
     }
 }
 
-pub async fn delete_todo(
+pub async fn delete_todo_memory(
     axum::extract::State(store): axum::extract::State<TodoStore>,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
@@ -144,9 +320,130 @@ pub async fn delete_todo(
     }
 }
 
+impl Todo {
+    pub fn new(title: &str, content: &str) -> Self {
+        let now = Utc::now();
+        Self {
+            id: Uuid::now_v7(),
+            title: title.to_string(),
+            content: content.to_string(),
+            completed: false,
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    pub fn new_with_validation(title: &str, content: &str) -> Result<Self, String> {
+        Self::validate_title(title)?;
+        Self::validate_content(content)?;
+        Ok(Self::new(title, content))
+    }
+
+    pub fn validate_title(title: &str) -> Result<(), String> {
+        let trimmed = title.trim();
+        if trimmed.is_empty() {
+            return Err("Title cannot be empty".to_string());
+        }
+        if title.len() > 255 {
+            return Err("Title cannot exceed 255 characters".to_string());
+        }
+        if title.contains('\n') {
+            return Err("Title cannot contain newlines".to_string());
+        }
+        Ok(())
+    }
+
+    pub fn validate_content(content: &str) -> Result<(), String> {
+        if content.len() > 10000 {
+            return Err("Content cannot exceed 10000 characters".to_string());
+        }
+        Ok(())
+    }
+
+    pub fn is_valid(&self) -> Result<(), String> {
+        Self::validate_title(&self.title)?;
+        Self::validate_content(&self.content)?;
+        Ok(())
+    }
+
+    pub fn update_title(&mut self, title: &str) {
+        self.title = title.to_string();
+        self.updated_at = Utc::now();
+    }
+
+    pub fn update_content(&mut self, content: &str) {
+        self.content = content.to_string();
+        self.updated_at = Utc::now();
+    }
+
+    pub fn toggle_completed(&mut self) {
+        self.completed = !self.completed;
+        self.updated_at = Utc::now();
+    }
+
+    pub fn update_with_validation(
+        &mut self,
+        title: Option<&str>,
+        content: Option<&str>,
+        completed: Option<bool>,
+    ) -> Result<(), String> {
+        if let Some(title) = title {
+            Self::validate_title(title)?;
+        }
+        if let Some(content) = content {
+            Self::validate_content(content)?;
+        }
+
+        if let Some(title) = title {
+            self.title = title.to_string();
+        }
+        if let Some(content) = content {
+            self.content = content.to_string();
+        }
+        if let Some(completed) = completed {
+            self.completed = completed;
+        }
+
+        self.updated_at = Utc::now();
+        Ok(())
+    }
+}
+
+impl CreateTodoRequest {
+    pub fn validate(&self) -> Result<(), String> {
+        Todo::validate_title(&self.title)?;
+        Todo::validate_content(&self.content)?;
+        Ok(())
+    }
+}
+
+impl UpdateTodoRequest {
+    pub fn validate(&self) -> Result<(), String> {
+        if let Some(title) = &self.title {
+            Todo::validate_title(title)?;
+        }
+        if let Some(content) = &self.content {
+            Todo::validate_content(content)?;
+        }
+        Ok(())
+    }
+}
+
 pub fn create_app() -> Router {
     let store: TodoStore = Arc::new(RwLock::new(HashMap::new()));
 
+    Router::new()
+        .route("/health", get(health_check))
+        .route("/api/todos", get(get_todos_memory))
+        .route("/api/todos", post(create_todo_memory))
+        .route("/api/todos/:id", get(get_todo_memory))
+        .route("/api/todos/:id", put(update_todo_memory))
+        .route("/api/todos/:id", delete(delete_todo_memory))
+        .layer(CorsLayer::permissive())
+        .with_state(store)
+}
+
+pub fn create_app_with_database(pool: DatabasePool) -> Router {
     Router::new()
         .route("/health", get(health_check))
         .route("/api/todos", get(get_todos))
@@ -155,7 +452,7 @@ pub fn create_app() -> Router {
         .route("/api/todos/:id", put(update_todo))
         .route("/api/todos/:id", delete(delete_todo))
         .layer(CorsLayer::permissive())
-        .with_state(store)
+        .with_state(pool)
 }
 
 #[cfg(test)]
