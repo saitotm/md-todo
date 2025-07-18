@@ -4,7 +4,8 @@
 
 - @.kiro/specs/markdown-todo-app/tasks.md の{0}を参照してください。
 - そのタスクがテストの実装でなければ、その事を伝えてコマンドを終了してください。
-- タスクがテスト実装であれば、テストの実装を行なってください。必要であれば、@.kiro/specs/markdown-todo-app/design.md や @.kiro/specs/markdown-todo-app/requirements.md も参照してください。
+- タスクがテスト実装であれば、github-flow に従い、ブランチを作成してください。なお、このブランチはテストの実装だけでなく、後に機能の実装も続けて行うので、ブランチ名はテストに限定された名前にしないでください。
+- ブランチの作成後、テストの実装を行なってください。必要であれば、@.kiro/specs/markdown-todo-app/design.md や @.kiro/specs/markdown-todo-app/requirements.md も参照してください。
 - TDD のアプローチに基づき、テストが実装し終わったら、実装したテストが失敗することを確認してください。
 - 確認が終了次第、コミットを作成してください。
 - さらに、tasks.md の{0}にチェックマークをつけてコミットを作成し、push してコマンドを終了してください。
