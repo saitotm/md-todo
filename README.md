@@ -71,6 +71,40 @@ md-todo/
 
 ### Development Setup
 
+#### Option 1: DevContainer (Recommended for VS Code)
+
+The easiest way to get started is using the devcontainer, which provides a complete development environment:
+
+1. **Prerequisites**
+   - VS Code with Dev Containers extension
+   - Docker Desktop
+
+2. **Setup (5 minutes)**
+   ```bash
+   git clone https://github.com/saitotm/md-todo.git
+   cd md-todo
+   code .
+   ```
+
+3. **Open in DevContainer**
+   - VS Code will prompt "Reopen in Container"
+   - Or use Command Palette: `Dev Containers: Reopen in Container`
+
+4. **Start Development**
+   ```bash
+   # Start all services
+   docker compose up -d
+   ```
+
+The devcontainer includes:
+- Node.js 20 + npm
+- Rust toolchain (cargo, rustc, clippy, rustfmt)
+- Docker CLI for container management
+- VS Code extensions (ESLint, Prettier, Rust Analyzer)
+- All development tools pre-configured
+
+#### Option 2: Local Development
+
 #### Frontend Development
 ```bash
 cd frontend
