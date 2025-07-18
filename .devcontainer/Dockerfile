@@ -19,13 +19,33 @@ RUN apt update && apt install -y less \
   iproute2 \
   dnsutils \
   aggregate \
-  jq
+  jq \
+  curl \
+  wget \
+  ca-certificates \
+  gnupg \
+  lsb-release \
+  build-essential \
+  pkg-config \
+  libssl-dev \
+  libpq-dev
+
+# Install Docker CLI
+RUN mkdir -m 0755 -p /etc/apt/keyrings && \
+  curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+  apt update && \
+  apt install -y docker-ce-cli docker-compose-plugin
+
 
 # Ensure default node user has access to /usr/local/share
 RUN mkdir -p /usr/local/share/npm-global && \
   chown -R node:node /usr/local/share
 
 ARG USERNAME=node
+
+# Add user to docker group for Docker outside of Docker
+RUN groupadd -f docker && usermod -aG docker $USERNAME
 
 # Persist bash history.
 RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
@@ -49,6 +69,16 @@ RUN ARCH=$(dpkg --print-architecture) && \
 
 # Set up non-root user
 USER node
+
+# Install Rust toolchain for node user
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable && \
+  . $HOME/.cargo/env && \
+  rustup component add clippy rustfmt && \
+  cargo install cargo-watch
+
+# Set up Rust environment for node user
+ENV PATH="/home/node/.cargo/bin:$PATH"
+ENV RUST_LOG=debug
 
 # Install global packages
 ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global

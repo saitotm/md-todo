@@ -56,7 +56,13 @@ for domain in \
     "api.anthropic.com" \
     "sentry.io" \
     "statsig.anthropic.com" \
-    "statsig.com"; do
+    "statsig.com" \
+    "crates.io" \
+    "static.crates.io" \
+    "index.crates.io" \
+    "crates-io.s3-us-west-1.amazonaws.com" \
+    "doc.rust-lang.org" \
+    "forge.rust-lang.org" ; do
     echo "Resolving $domain..."
     ips=$(dig +short A "$domain")
     if [ -z "$ips" ]; then
