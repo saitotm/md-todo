@@ -7,7 +7,7 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, Pool, Postgres};
+use sqlx::{Pool, Postgres};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -67,12 +67,6 @@ pub type DatabasePool = Pool<Postgres>;
 
 pub async fn create_database_pool(database_url: &str) -> Result<DatabasePool, sqlx::Error> {
     sqlx::PgPool::connect(database_url).await
-}
-
-pub async fn setup_database(pool: &DatabasePool) -> Result<(), sqlx::Error> {
-    // For now, we'll skip migrations to avoid compile-time database dependency
-    // sqlx::migrate!("../database/migrations").run(pool).await?;
-    Ok(())
 }
 
 pub struct TodoRepository {
