@@ -1,4 +1,4 @@
-use md_todo_backend::{create_app, create_app_with_database, create_database_pool};
+use md_todo_backend::{create_app_with_database, create_database_pool};
 use std::env;
 
 #[tokio::main]
@@ -13,9 +13,7 @@ async fn main() {
             create_app_with_database(pool)
         }
         Err(e) => {
-            eprintln!("Failed to connect to database: {}", e);
-            println!("Falling back to in-memory storage");
-            create_app()
+            panic!("Failed to connect to database: {}", e);
         }
     };
 
