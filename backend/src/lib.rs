@@ -70,15 +70,7 @@ pub async fn create_database_pool(database_url: &str) -> Result<DatabasePool, sq
     sqlx::PgPool::connect(database_url).await
 }
 
-#[derive(thiserror::Error, Debug)]
-pub enum TodoError {
-    #[error("Todo not found")]
-    NotFound,
-    #[error("Database error: {0}")]
-    Database(#[from] sqlx::Error),
-    #[error("Validation error: {0}")]
-    Validation(String),
-}
+pub type TodoError = Box<dyn std::error::Error + Send + Sync>;
 
 #[async_trait]
 pub trait TodoRepositoryTrait: Send + Sync {
@@ -128,7 +120,8 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
         .bind(todo.created_at)
         .bind(todo.updated_at)
         .fetch_one(&self.pool)
-        .await?;
+        .await
+        .map_err(|e| Box::new(e) as TodoError)?;
 
         Ok(row)
     }
@@ -142,7 +135,8 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
             "#
         )
         .fetch_all(&self.pool)
-        .await?;
+        .await
+        .map_err(|e| Box::new(e) as TodoError)?;
 
         Ok(rows)
     }
@@ -157,7 +151,8 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
         )
         .bind(id)
         .fetch_optional(&self.pool)
-        .await?;
+        .await
+        .map_err(|e| Box::new(e) as TodoError)?;
 
         Ok(row)
     }
@@ -180,7 +175,8 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
         .bind(updates.completed)
         .bind(Utc::now())
         .fetch_optional(&self.pool)
-        .await?;
+        .await
+        .map_err(|e| Box::new(e) as TodoError)?;
 
         Ok(row)
     }
@@ -194,7 +190,8 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
         )
         .bind(id)
         .execute(&self.pool)
-        .await?;
+        .await
+        .map_err(|e| Box::new(e) as TodoError)?;
 
         Ok(result.rows_affected() > 0)
     }
@@ -254,7 +251,6 @@ pub async fn health_check() -> &'static str {
 pub async fn get_todos<R: TodoRepositoryTrait>(State(repository): State<Arc<R>>) -> Result<Json<ApiResponse<Vec<Todo>>>, StatusCode> {
     match repository.get_all_todos().await {
         Ok(todos) => Ok(Json(ApiResponse::success(todos))),
-        Err(TodoError::Database(_)) => Err(StatusCode::INTERNAL_SERVER_ERROR),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
@@ -271,7 +267,6 @@ pub async fn create_todo<R: TodoRepositoryTrait>(
     
     match repository.create_todo(&todo).await {
         Ok(created_todo) => Ok(Json(ApiResponse::success(created_todo))),
-        Err(TodoError::Validation(_)) => Err(StatusCode::BAD_REQUEST),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
@@ -299,7 +294,6 @@ pub async fn update_todo<R: TodoRepositoryTrait>(
     match repository.update_todo(id, &request).await {
         Ok(Some(todo)) => Ok(Json(ApiResponse::success(todo))),
         Ok(None) => Err(StatusCode::NOT_FOUND),
-        Err(TodoError::Validation(_)) => Err(StatusCode::BAD_REQUEST),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }

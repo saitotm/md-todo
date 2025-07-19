@@ -243,7 +243,7 @@ impl MockTodoRepository {
 impl TodoRepositoryTrait for MockTodoRepository {
     async fn create_todo(&self, todo: &Todo) -> Result<Todo, TodoError> {
         if *self.should_fail.read().await {
-            return Err(TodoError::Database(sqlx::Error::RowNotFound));
+            return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
         }
         
         let mut todos = self.todos.write().await;
@@ -253,7 +253,7 @@ impl TodoRepositoryTrait for MockTodoRepository {
 
     async fn get_all_todos(&self) -> Result<Vec<Todo>, TodoError> {
         if *self.should_fail.read().await {
-            return Err(TodoError::Database(sqlx::Error::RowNotFound));
+            return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
         }
         
         let todos = self.todos.read().await;
@@ -262,7 +262,7 @@ impl TodoRepositoryTrait for MockTodoRepository {
 
     async fn get_todo_by_id(&self, id: Uuid) -> Result<Option<Todo>, TodoError> {
         if *self.should_fail.read().await {
-            return Err(TodoError::Database(sqlx::Error::RowNotFound));
+            return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
         }
         
         let todos = self.todos.read().await;
@@ -271,7 +271,7 @@ impl TodoRepositoryTrait for MockTodoRepository {
 
     async fn update_todo(&self, id: Uuid, updates: &UpdateTodoRequest) -> Result<Option<Todo>, TodoError> {
         if *self.should_fail.read().await {
-            return Err(TodoError::Database(sqlx::Error::RowNotFound));
+            return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
         }
         
         let mut todos = self.todos.write().await;
@@ -294,7 +294,7 @@ impl TodoRepositoryTrait for MockTodoRepository {
 
     async fn delete_todo(&self, id: Uuid) -> Result<bool, TodoError> {
         if *self.should_fail.read().await {
-            return Err(TodoError::Database(sqlx::Error::RowNotFound));
+            return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
         }
         
         let mut todos = self.todos.write().await;
