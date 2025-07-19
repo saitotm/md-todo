@@ -5,7 +5,7 @@ use axum::{
 use async_trait::async_trait;
 use chrono::Utc;
 use md_todo_backend::{
-    create_app_with_repository, ApiResponse, CreateTodoRequest, MemoryTodoRepository, Todo, 
+    create_app, create_app_with_repository, ApiResponse, CreateTodoRequest, MemoryTodoRepository, Todo, 
     TodoError, TodoRepositoryTrait, UpdateTodoRequest
 };
 use serde_json::json;
@@ -14,14 +14,11 @@ use tokio::sync::RwLock;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-fn create_test_app() -> axum::Router {
-    let repository = Arc::new(MemoryTodoRepository::new());
-    create_app_with_repository(repository)
-}
+// Use the same create_app function as production
 
 #[tokio::test]
 async fn test_health_check() {
-    let app = create_test_app();
+    let app = create_app();
 
     let response = app
         .oneshot(
@@ -43,7 +40,7 @@ async fn test_health_check() {
 
 #[tokio::test]
 async fn test_get_todos_empty() {
-    let app = create_test_app();
+    let app = create_app();
 
     let response = app
         .oneshot(
@@ -68,7 +65,7 @@ async fn test_get_todos_empty() {
 
 #[tokio::test]
 async fn test_create_todo() {
-    let app = create_test_app();
+    let app = create_app();
 
     let create_request = CreateTodoRequest {
         title: "Test Todo".to_string(),
@@ -103,7 +100,7 @@ async fn test_create_todo() {
 
 #[tokio::test]
 async fn test_get_todo_not_found() {
-    let app = create_test_app();
+    let app = create_app();
 
     let response = app
         .oneshot(
@@ -120,7 +117,7 @@ async fn test_get_todo_not_found() {
 
 #[tokio::test]
 async fn test_crud_operations() {
-    let app = create_test_app();
+    let app = create_app();
 
     // Create a todo
     let create_request = CreateTodoRequest {
@@ -333,7 +330,7 @@ async fn test_database_error_handling() {
 
 #[tokio::test]
 async fn test_validation_error_handling() {
-    let app = create_test_app();
+    let app = create_app();
 
     // Test empty title validation
     let invalid_request = CreateTodoRequest {
