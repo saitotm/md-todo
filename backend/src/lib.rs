@@ -5,6 +5,7 @@ use axum::{
     routing::{delete, get, post, put},
     Router,
 };
+use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
@@ -69,16 +70,50 @@ pub async fn create_database_pool(database_url: &str) -> Result<DatabasePool, sq
     sqlx::PgPool::connect(database_url).await
 }
 
-pub struct TodoRepository {
+#[derive(thiserror::Error, Debug)]
+pub enum TodoError {
+    #[error("Todo not found")]
+    NotFound,
+    #[error("Database error: {0}")]
+    Database(#[from] sqlx::Error),
+    #[error("Validation error: {0}")]
+    Validation(String),
+}
+
+#[async_trait]
+pub trait TodoRepositoryTrait: Send + Sync {
+    async fn create_todo(&self, todo: &Todo) -> Result<Todo, TodoError>;
+    async fn get_all_todos(&self) -> Result<Vec<Todo>, TodoError>;
+    async fn get_todo_by_id(&self, id: Uuid) -> Result<Option<Todo>, TodoError>;
+    async fn update_todo(&self, id: Uuid, updates: &UpdateTodoRequest) -> Result<Option<Todo>, TodoError>;
+    async fn delete_todo(&self, id: Uuid) -> Result<bool, TodoError>;
+}
+
+pub struct DatabaseTodoRepository {
     pool: DatabasePool,
 }
 
-impl TodoRepository {
+impl DatabaseTodoRepository {
     pub fn new(pool: DatabasePool) -> Self {
         Self { pool }
     }
+}
 
-    pub async fn create_todo(&self, todo: &Todo) -> Result<Todo, sqlx::Error> {
+pub struct MemoryTodoRepository {
+    store: TodoStore,
+}
+
+impl MemoryTodoRepository {
+    pub fn new() -> Self {
+        Self {
+            store: Arc::new(RwLock::new(HashMap::new())),
+        }
+    }
+}
+
+#[async_trait]
+impl TodoRepositoryTrait for DatabaseTodoRepository {
+    async fn create_todo(&self, todo: &Todo) -> Result<Todo, TodoError> {
         let row = sqlx::query_as::<_, Todo>(
             r#"
             INSERT INTO todos (id, title, content, completed, created_at, updated_at)
@@ -98,7 +133,7 @@ impl TodoRepository {
         Ok(row)
     }
 
-    pub async fn get_all_todos(&self) -> Result<Vec<Todo>, sqlx::Error> {
+    async fn get_all_todos(&self) -> Result<Vec<Todo>, TodoError> {
         let rows = sqlx::query_as::<_, Todo>(
             r#"
             SELECT id, title, content, completed, created_at, updated_at
@@ -112,7 +147,7 @@ impl TodoRepository {
         Ok(rows)
     }
 
-    pub async fn get_todo_by_id(&self, id: Uuid) -> Result<Option<Todo>, sqlx::Error> {
+    async fn get_todo_by_id(&self, id: Uuid) -> Result<Option<Todo>, TodoError> {
         let row = sqlx::query_as::<_, Todo>(
             r#"
             SELECT id, title, content, completed, created_at, updated_at
@@ -127,7 +162,7 @@ impl TodoRepository {
         Ok(row)
     }
 
-    pub async fn update_todo(&self, id: Uuid, updates: &UpdateTodoRequest) -> Result<Option<Todo>, sqlx::Error> {
+    async fn update_todo(&self, id: Uuid, updates: &UpdateTodoRequest) -> Result<Option<Todo>, TodoError> {
         let row = sqlx::query_as::<_, Todo>(
             r#"
             UPDATE todos
@@ -150,7 +185,7 @@ impl TodoRepository {
         Ok(row)
     }
 
-    pub async fn delete_todo(&self, id: Uuid) -> Result<bool, sqlx::Error> {
+    async fn delete_todo(&self, id: Uuid) -> Result<bool, TodoError> {
         let result = sqlx::query(
             r#"
             DELETE FROM todos
@@ -165,41 +200,86 @@ impl TodoRepository {
     }
 }
 
+#[async_trait]
+impl TodoRepositoryTrait for MemoryTodoRepository {
+    async fn create_todo(&self, todo: &Todo) -> Result<Todo, TodoError> {
+        let mut todos = self.store.write().await;
+        todos.insert(todo.id, todo.clone());
+        Ok(todo.clone())
+    }
+
+    async fn get_all_todos(&self) -> Result<Vec<Todo>, TodoError> {
+        let todos = self.store.read().await;
+        let mut todo_list: Vec<Todo> = todos.values().cloned().collect();
+        todo_list.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        Ok(todo_list)
+    }
+
+    async fn get_todo_by_id(&self, id: Uuid) -> Result<Option<Todo>, TodoError> {
+        let todos = self.store.read().await;
+        Ok(todos.get(&id).cloned())
+    }
+
+    async fn update_todo(&self, id: Uuid, updates: &UpdateTodoRequest) -> Result<Option<Todo>, TodoError> {
+        let mut todos = self.store.write().await;
+        
+        match todos.get_mut(&id) {
+            Some(todo) => {
+                if let Some(title) = &updates.title {
+                    todo.title = title.clone();
+                }
+                if let Some(content) = &updates.content {
+                    todo.content = content.clone();
+                }
+                if let Some(completed) = updates.completed {
+                    todo.completed = completed;
+                }
+                todo.updated_at = Utc::now();
+                Ok(Some(todo.clone()))
+            }
+            None => Ok(None),
+        }
+    }
+
+    async fn delete_todo(&self, id: Uuid) -> Result<bool, TodoError> {
+        let mut todos = self.store.write().await;
+        Ok(todos.remove(&id).is_some())
+    }
+}
+
 pub async fn health_check() -> &'static str {
     "OK"
 }
 
-pub async fn get_todos(State(pool): State<DatabasePool>) -> Result<Json<ApiResponse<Vec<Todo>>>, StatusCode> {
-    let repository = TodoRepository::new(pool);
+pub async fn get_todos<R: TodoRepositoryTrait>(State(repository): State<Arc<R>>) -> Result<Json<ApiResponse<Vec<Todo>>>, StatusCode> {
     match repository.get_all_todos().await {
         Ok(todos) => Ok(Json(ApiResponse::success(todos))),
+        Err(TodoError::Database(_)) => Err(StatusCode::INTERNAL_SERVER_ERROR),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
 
-pub async fn create_todo(
-    State(pool): State<DatabasePool>,
+pub async fn create_todo<R: TodoRepositoryTrait>(
+    State(repository): State<Arc<R>>,
     Json(request): Json<CreateTodoRequest>,
 ) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
-    if let Err(_) = request.validate() {
+    if request.validate().is_err() {
         return Err(StatusCode::BAD_REQUEST);
     }
 
     let todo = Todo::new(&request.title, &request.content);
-    let repository = TodoRepository::new(pool);
     
     match repository.create_todo(&todo).await {
         Ok(created_todo) => Ok(Json(ApiResponse::success(created_todo))),
+        Err(TodoError::Validation(_)) => Err(StatusCode::BAD_REQUEST),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
 
-pub async fn get_todo(
-    State(pool): State<DatabasePool>,
+pub async fn get_todo<R: TodoRepositoryTrait>(
+    State(repository): State<Arc<R>>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
-    let repository = TodoRepository::new(pool);
-    
     match repository.get_todo_by_id(id).await {
         Ok(Some(todo)) => Ok(Json(ApiResponse::success(todo))),
         Ok(None) => Err(StatusCode::NOT_FOUND),
@@ -207,30 +287,27 @@ pub async fn get_todo(
     }
 }
 
-pub async fn update_todo(
-    State(pool): State<DatabasePool>,
+pub async fn update_todo<R: TodoRepositoryTrait>(
+    State(repository): State<Arc<R>>,
     Path(id): Path<Uuid>,
     Json(request): Json<UpdateTodoRequest>,
 ) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
-    if let Err(_) = request.validate() {
+    if request.validate().is_err() {
         return Err(StatusCode::BAD_REQUEST);
     }
-
-    let repository = TodoRepository::new(pool);
     
     match repository.update_todo(id, &request).await {
         Ok(Some(todo)) => Ok(Json(ApiResponse::success(todo))),
         Ok(None) => Err(StatusCode::NOT_FOUND),
+        Err(TodoError::Validation(_)) => Err(StatusCode::BAD_REQUEST),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
 
-pub async fn delete_todo(
-    State(pool): State<DatabasePool>,
+pub async fn delete_todo<R: TodoRepositoryTrait>(
+    State(repository): State<Arc<R>>,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
-    let repository = TodoRepository::new(pool);
-    
     match repository.delete_todo(id).await {
         Ok(true) => Ok(StatusCode::NO_CONTENT),
         Ok(false) => Err(StatusCode::NOT_FOUND),
@@ -238,81 +315,6 @@ pub async fn delete_todo(
     }
 }
 
-pub async fn get_todos_memory(store: axum::extract::State<TodoStore>) -> Json<ApiResponse<Vec<Todo>>> {
-    let todos = store.read().await;
-    let mut todo_list: Vec<Todo> = todos.values().cloned().collect();
-    todo_list.sort_by(|a, b| b.created_at.cmp(&a.created_at));
-    Json(ApiResponse::success(todo_list))
-}
-
-pub async fn create_todo_memory(
-    axum::extract::State(store): axum::extract::State<TodoStore>,
-    Json(request): Json<CreateTodoRequest>,
-) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
-    if let Err(_) = request.validate() {
-        return Err(StatusCode::BAD_REQUEST);
-    }
-
-    let todo = Todo::new(&request.title, &request.content);
-    let mut todos = store.write().await;
-    todos.insert(todo.id, todo.clone());
-
-    Ok(Json(ApiResponse::success(todo)))
-}
-
-pub async fn get_todo_memory(
-    axum::extract::State(store): axum::extract::State<TodoStore>,
-    Path(id): Path<Uuid>,
-) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
-    let todos = store.read().await;
-
-    match todos.get(&id) {
-        Some(todo) => Ok(Json(ApiResponse::success(todo.clone()))),
-        None => Err(StatusCode::NOT_FOUND),
-    }
-}
-
-pub async fn update_todo_memory(
-    axum::extract::State(store): axum::extract::State<TodoStore>,
-    Path(id): Path<Uuid>,
-    Json(request): Json<UpdateTodoRequest>,
-) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
-    if let Err(_) = request.validate() {
-        return Err(StatusCode::BAD_REQUEST);
-    }
-
-    let mut todos = store.write().await;
-
-    match todos.get_mut(&id) {
-        Some(todo) => {
-            if let Some(title) = request.title {
-                todo.title = title;
-            }
-            if let Some(content) = request.content {
-                todo.content = content;
-            }
-            if let Some(completed) = request.completed {
-                todo.completed = completed;
-            }
-            todo.updated_at = Utc::now();
-
-            Ok(Json(ApiResponse::success(todo.clone())))
-        }
-        None => Err(StatusCode::NOT_FOUND),
-    }
-}
-
-pub async fn delete_todo_memory(
-    axum::extract::State(store): axum::extract::State<TodoStore>,
-    Path(id): Path<Uuid>,
-) -> Result<StatusCode, StatusCode> {
-    let mut todos = store.write().await;
-
-    match todos.remove(&id) {
-        Some(_) => Ok(StatusCode::NO_CONTENT),
-        None => Err(StatusCode::NOT_FOUND),
-    }
-}
 
 impl Todo {
     pub fn new(title: &str, content: &str) -> Self {
@@ -423,30 +425,26 @@ impl UpdateTodoRequest {
     }
 }
 
-pub fn create_app() -> Router {
-    let store: TodoStore = Arc::new(RwLock::new(HashMap::new()));
-
+pub fn create_app_with_repository<R: TodoRepositoryTrait + 'static>(repository: Arc<R>) -> Router {
     Router::new()
         .route("/health", get(health_check))
-        .route("/api/todos", get(get_todos_memory))
-        .route("/api/todos", post(create_todo_memory))
-        .route("/api/todos/:id", get(get_todo_memory))
-        .route("/api/todos/:id", put(update_todo_memory))
-        .route("/api/todos/:id", delete(delete_todo_memory))
+        .route("/api/todos", get(get_todos::<R>))
+        .route("/api/todos", post(create_todo::<R>))
+        .route("/api/todos/:id", get(get_todo::<R>))
+        .route("/api/todos/:id", put(update_todo::<R>))
+        .route("/api/todos/:id", delete(delete_todo::<R>))
         .layer(CorsLayer::permissive())
-        .with_state(store)
+        .with_state(repository)
+}
+
+pub fn create_app() -> Router {
+    let repository = Arc::new(MemoryTodoRepository::new());
+    create_app_with_repository(repository)
 }
 
 pub fn create_app_with_database(pool: DatabasePool) -> Router {
-    Router::new()
-        .route("/health", get(health_check))
-        .route("/api/todos", get(get_todos))
-        .route("/api/todos", post(create_todo))
-        .route("/api/todos/:id", get(get_todo))
-        .route("/api/todos/:id", put(update_todo))
-        .route("/api/todos/:id", delete(delete_todo))
-        .layer(CorsLayer::permissive())
-        .with_state(pool)
+    let repository = Arc::new(DatabaseTodoRepository::new(pool));
+    create_app_with_repository(repository)
 }
 
 #[cfg(test)]
