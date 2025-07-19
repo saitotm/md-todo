@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
     response::Json,
-    routing::{delete, get, post, put},
+    routing::{delete, get, patch, post},
     Router,
 };
 use async_trait::async_trait;
@@ -431,7 +431,7 @@ pub fn create_app_with_repository<R: TodoRepositoryTrait + 'static>(repository: 
         .route("/api/todos", get(get_todos::<R>))
         .route("/api/todos", post(create_todo::<R>))
         .route("/api/todos/:id", get(get_todo::<R>))
-        .route("/api/todos/:id", put(update_todo::<R>))
+        .route("/api/todos/:id", patch(update_todo::<R>))
         .route("/api/todos/:id", delete(delete_todo::<R>))
         .layer(CorsLayer::permissive())
         .with_state(repository)

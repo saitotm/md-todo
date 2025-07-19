@@ -172,7 +172,7 @@ async fn test_crud_operations() {
         .oneshot(
             Request::builder()
                 .uri(&format!("/api/todos/{}", todo_id))
-                .method("PUT")
+                .method("PATCH")
                 .header("content-type", "application/json")
                 .body(Body::from(serde_json::to_vec(&update_request).unwrap()))
                 .unwrap(),
