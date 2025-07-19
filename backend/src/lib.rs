@@ -106,6 +106,7 @@ impl MemoryTodoRepository {
 #[async_trait]
 impl TodoRepositoryTrait for DatabaseTodoRepository {
     async fn create_todo(&self, todo: &Todo) -> Result<Todo, TodoError> {
+        tracing::debug!("DatabaseTodoRepository: Creating todo with id: {}", todo.id);
         let row = sqlx::query_as::<_, Todo>(
             r#"
             INSERT INTO todos (id, title, content, completed, created_at, updated_at)
@@ -121,12 +122,17 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
         .bind(todo.updated_at)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Box::new(e) as TodoError)?;
+        .map_err(|e| {
+            tracing::error!("DatabaseTodoRepository: Failed to create todo: {}", e);
+            Box::new(e) as TodoError
+        })?;
 
+        tracing::debug!("DatabaseTodoRepository: Successfully created todo with id: {}", row.id);
         Ok(row)
     }
 
     async fn get_all_todos(&self) -> Result<Vec<Todo>, TodoError> {
+        tracing::debug!("DatabaseTodoRepository: Fetching all todos");
         let rows = sqlx::query_as::<_, Todo>(
             r#"
             SELECT id, title, content, completed, created_at, updated_at
@@ -136,12 +142,17 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Box::new(e) as TodoError)?;
+        .map_err(|e| {
+            tracing::error!("DatabaseTodoRepository: Failed to fetch all todos: {}", e);
+            Box::new(e) as TodoError
+        })?;
 
+        tracing::debug!("DatabaseTodoRepository: Successfully fetched {} todos", rows.len());
         Ok(rows)
     }
 
     async fn get_todo_by_id(&self, id: Uuid) -> Result<Option<Todo>, TodoError> {
+        tracing::debug!("DatabaseTodoRepository: Fetching todo with id: {}", id);
         let row = sqlx::query_as::<_, Todo>(
             r#"
             SELECT id, title, content, completed, created_at, updated_at
@@ -152,12 +163,21 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
         .bind(id)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| Box::new(e) as TodoError)?;
+        .map_err(|e| {
+            tracing::error!("DatabaseTodoRepository: Failed to fetch todo with id {}: {}", id, e);
+            Box::new(e) as TodoError
+        })?;
 
+        if row.is_some() {
+            tracing::debug!("DatabaseTodoRepository: Successfully fetched todo with id: {}", id);
+        } else {
+            tracing::debug!("DatabaseTodoRepository: Todo not found with id: {}", id);
+        }
         Ok(row)
     }
 
     async fn update_todo(&self, id: Uuid, updates: &UpdateTodoRequest) -> Result<Option<Todo>, TodoError> {
+        tracing::debug!("DatabaseTodoRepository: Updating todo with id: {}", id);
         let row = sqlx::query_as::<_, Todo>(
             r#"
             UPDATE todos
@@ -176,12 +196,21 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
         .bind(Utc::now())
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| Box::new(e) as TodoError)?;
+        .map_err(|e| {
+            tracing::error!("DatabaseTodoRepository: Failed to update todo with id {}: {}", id, e);
+            Box::new(e) as TodoError
+        })?;
 
+        if row.is_some() {
+            tracing::debug!("DatabaseTodoRepository: Successfully updated todo with id: {}", id);
+        } else {
+            tracing::debug!("DatabaseTodoRepository: Todo not found for update with id: {}", id);
+        }
         Ok(row)
     }
 
     async fn delete_todo(&self, id: Uuid) -> Result<bool, TodoError> {
+        tracing::debug!("DatabaseTodoRepository: Deleting todo with id: {}", id);
         let result = sqlx::query(
             r#"
             DELETE FROM todos
@@ -191,9 +220,18 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
         .bind(id)
         .execute(&self.pool)
         .await
-        .map_err(|e| Box::new(e) as TodoError)?;
+        .map_err(|e| {
+            tracing::error!("DatabaseTodoRepository: Failed to delete todo with id {}: {}", id, e);
+            Box::new(e) as TodoError
+        })?;
 
-        Ok(result.rows_affected() > 0)
+        let deleted = result.rows_affected() > 0;
+        if deleted {
+            tracing::debug!("DatabaseTodoRepository: Successfully deleted todo with id: {}", id);
+        } else {
+            tracing::debug!("DatabaseTodoRepository: Todo not found for deletion with id: {}", id);
+        }
+        Ok(deleted)
     }
 }
 
@@ -249,9 +287,16 @@ pub async fn health_check() -> &'static str {
 }
 
 pub async fn get_todos<R: TodoRepositoryTrait>(State(repository): State<Arc<R>>) -> Result<Json<ApiResponse<Vec<Todo>>>, StatusCode> {
+    tracing::info!("Getting all todos");
     match repository.get_all_todos().await {
-        Ok(todos) => Ok(Json(ApiResponse::success(todos))),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Ok(todos) => {
+            tracing::info!("Successfully retrieved {} todos", todos.len());
+            Ok(Json(ApiResponse::success(todos)))
+        },
+        Err(e) => {
+            tracing::error!("Failed to get todos: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        },
     }
 }
 
@@ -259,15 +304,24 @@ pub async fn create_todo<R: TodoRepositoryTrait>(
     State(repository): State<Arc<R>>,
     Json(request): Json<CreateTodoRequest>,
 ) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
-    if request.validate().is_err() {
+    tracing::info!("Creating new todo with title: '{}'", request.title);
+    
+    if let Err(e) = request.validate() {
+        tracing::warn!("Validation failed for create todo request: {}", e);
         return Err(StatusCode::BAD_REQUEST);
     }
 
     let todo = Todo::new(&request.title, &request.content);
     
     match repository.create_todo(&todo).await {
-        Ok(created_todo) => Ok(Json(ApiResponse::success(created_todo))),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Ok(created_todo) => {
+            tracing::info!("Successfully created todo with id: {}", created_todo.id);
+            Ok(Json(ApiResponse::success(created_todo)))
+        },
+        Err(e) => {
+            tracing::error!("Failed to create todo: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        },
     }
 }
 
@@ -275,10 +329,20 @@ pub async fn get_todo<R: TodoRepositoryTrait>(
     State(repository): State<Arc<R>>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
+    tracing::info!("Getting todo with id: {}", id);
     match repository.get_todo_by_id(id).await {
-        Ok(Some(todo)) => Ok(Json(ApiResponse::success(todo))),
-        Ok(None) => Err(StatusCode::NOT_FOUND),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Ok(Some(todo)) => {
+            tracing::info!("Successfully retrieved todo with id: {}", id);
+            Ok(Json(ApiResponse::success(todo)))
+        },
+        Ok(None) => {
+            tracing::warn!("Todo not found with id: {}", id);
+            Err(StatusCode::NOT_FOUND)
+        },
+        Err(e) => {
+            tracing::error!("Failed to get todo with id {}: {}", id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        },
     }
 }
 
@@ -287,14 +351,26 @@ pub async fn update_todo<R: TodoRepositoryTrait>(
     Path(id): Path<Uuid>,
     Json(request): Json<UpdateTodoRequest>,
 ) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
-    if request.validate().is_err() {
+    tracing::info!("Updating todo with id: {}", id);
+    
+    if let Err(e) = request.validate() {
+        tracing::warn!("Validation failed for update todo request: {}", e);
         return Err(StatusCode::BAD_REQUEST);
     }
     
     match repository.update_todo(id, &request).await {
-        Ok(Some(todo)) => Ok(Json(ApiResponse::success(todo))),
-        Ok(None) => Err(StatusCode::NOT_FOUND),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Ok(Some(todo)) => {
+            tracing::info!("Successfully updated todo with id: {}", id);
+            Ok(Json(ApiResponse::success(todo)))
+        },
+        Ok(None) => {
+            tracing::warn!("Todo not found for update with id: {}", id);
+            Err(StatusCode::NOT_FOUND)
+        },
+        Err(e) => {
+            tracing::error!("Failed to update todo with id {}: {}", id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        },
     }
 }
 
@@ -302,10 +378,20 @@ pub async fn delete_todo<R: TodoRepositoryTrait>(
     State(repository): State<Arc<R>>,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
+    tracing::info!("Deleting todo with id: {}", id);
     match repository.delete_todo(id).await {
-        Ok(true) => Ok(StatusCode::NO_CONTENT),
-        Ok(false) => Err(StatusCode::NOT_FOUND),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Ok(true) => {
+            tracing::info!("Successfully deleted todo with id: {}", id);
+            Ok(StatusCode::NO_CONTENT)
+        },
+        Ok(false) => {
+            tracing::warn!("Todo not found for deletion with id: {}", id);
+            Err(StatusCode::NOT_FOUND)
+        },
+        Err(e) => {
+            tracing::error!("Failed to delete todo with id {}: {}", id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        },
     }
 }
 
