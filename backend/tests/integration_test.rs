@@ -1,12 +1,12 @@
+use async_trait::async_trait;
 use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
-use async_trait::async_trait;
 use chrono::Utc;
 use md_todo_backend::{
-    create_app_with_repository, ApiResponse, CreateTodoRequest, Todo, 
-    TodoError, TodoRepositoryTrait, UpdateTodoRequest
+    create_app_with_repository, CreateTodoRequest, Todo, TodoError, TodoListResponse,
+    TodoRepositoryTrait, TodoResponse, UpdateTodoRequest,
 };
 use serde_json::json;
 use std::sync::Arc;
@@ -39,7 +39,7 @@ impl TodoRepositoryTrait for MockTodoRepository {
         if *self.should_fail.read().await {
             return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
         }
-        
+
         let mut todos = self.todos.write().await;
         todos.push(todo.clone());
         Ok(todo.clone())
@@ -49,7 +49,7 @@ impl TodoRepositoryTrait for MockTodoRepository {
         if *self.should_fail.read().await {
             return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
         }
-        
+
         let todos = self.todos.read().await;
         Ok(todos.clone())
     }
@@ -58,16 +58,20 @@ impl TodoRepositoryTrait for MockTodoRepository {
         if *self.should_fail.read().await {
             return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
         }
-        
+
         let todos = self.todos.read().await;
         Ok(todos.iter().find(|t| t.id == id).cloned())
     }
 
-    async fn update_todo(&self, id: Uuid, updates: &UpdateTodoRequest) -> Result<Option<Todo>, TodoError> {
+    async fn update_todo(
+        &self,
+        id: Uuid,
+        updates: &UpdateTodoRequest,
+    ) -> Result<Option<Todo>, TodoError> {
         if *self.should_fail.read().await {
             return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
         }
-        
+
         let mut todos = self.todos.write().await;
         if let Some(todo) = todos.iter_mut().find(|t| t.id == id) {
             if let Some(title) = &updates.title {
@@ -90,7 +94,7 @@ impl TodoRepositoryTrait for MockTodoRepository {
         if *self.should_fail.read().await {
             return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
         }
-        
+
         let mut todos = self.todos.write().await;
         if let Some(pos) = todos.iter().position(|t| t.id == id) {
             todos.remove(pos);
@@ -148,7 +152,7 @@ async fn test_get_todos_empty() {
     let body = axum::body::to_bytes(response.into_body(), usize::MAX)
         .await
         .unwrap();
-    let api_response: ApiResponse<Vec<Todo>> = serde_json::from_slice(&body).unwrap();
+    let api_response: TodoListResponse = serde_json::from_slice(&body).unwrap();
 
     assert!(api_response.success);
     assert_eq!(api_response.data.unwrap().len(), 0);
@@ -180,7 +184,7 @@ async fn test_create_todo() {
     let body = axum::body::to_bytes(response.into_body(), usize::MAX)
         .await
         .unwrap();
-    let api_response: ApiResponse<Todo> = serde_json::from_slice(&body).unwrap();
+    let api_response: TodoResponse = serde_json::from_slice(&body).unwrap();
 
     assert!(api_response.success);
     let todo = api_response.data.unwrap();
@@ -234,7 +238,7 @@ async fn test_crud_operations() {
     let body = axum::body::to_bytes(response.into_body(), usize::MAX)
         .await
         .unwrap();
-    let api_response: ApiResponse<Todo> = serde_json::from_slice(&body).unwrap();
+    let api_response: TodoResponse = serde_json::from_slice(&body).unwrap();
     let todo = api_response.data.unwrap();
     let todo_id = todo.id;
 
@@ -276,7 +280,7 @@ async fn test_crud_operations() {
     let body = axum::body::to_bytes(response.into_body(), usize::MAX)
         .await
         .unwrap();
-    let api_response: ApiResponse<Todo> = serde_json::from_slice(&body).unwrap();
+    let api_response: TodoResponse = serde_json::from_slice(&body).unwrap();
     let updated_todo = api_response.data.unwrap();
 
     assert_eq!(updated_todo.title, "Updated CRUD Test");
@@ -315,7 +319,7 @@ async fn test_crud_operations() {
 async fn test_database_error_handling() {
     let mock_repo = Arc::new(MockTodoRepository::new());
     mock_repo.set_should_fail(true).await;
-    
+
     let app = create_app_with_repository(mock_repo);
 
     // Test that database errors return 500
@@ -355,4 +359,47 @@ async fn test_validation_error_handling() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn test_swagger_ui_endpoint() {
+    let app = create_test_app();
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/swagger-ui")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Swagger UI returns a redirect to the actual UI page
+    assert!(response.status() == StatusCode::OK || response.status() == StatusCode::SEE_OTHER);
+}
+
+#[tokio::test]
+async fn test_openapi_json_endpoint() {
+    let app = create_test_app();
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api-docs/openapi.json")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let content_type = response.headers().get("content-type");
+    assert!(content_type.is_some());
+    assert!(content_type
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .contains("application/json"));
 }

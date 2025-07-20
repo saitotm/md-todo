@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -5,34 +6,74 @@ use axum::{
     routing::{delete, get, patch, post},
     Router,
 };
-use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+#[allow(unused_imports)] // json! macro is used in schema examples throughout the file
+use serde_json::json;
 use sqlx::{Pool, Postgres};
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
+use utoipa::{OpenApi, ToSchema};
+use utoipa_swagger_ui::SwaggerUi;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, ToSchema)]
+#[schema(example = json!({
+    "id": "018c8f3e-7c4b-7f2a-9b1d-3e4f5a6b7c8d",
+    "title": "Sample Todo",
+    "content": "This is a **markdown** todo item",
+    "completed": false,
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+}))]
 pub struct Todo {
+    #[schema(example = "018c8f3e-7c4b-7f2a-9b1d-3e4f5a6b7c8d")]
     pub id: Uuid,
+    #[schema(example = "Complete project documentation")]
     pub title: String,
+    #[schema(
+        example = "Write comprehensive documentation including **API specs** and usage examples"
+    )]
     pub content: String,
+    #[schema(example = false)]
     pub completed: bool,
+    #[schema(example = "2024-01-01T00:00:00Z")]
     pub created_at: DateTime<Utc>,
+    #[schema(example = "2024-01-01T00:00:00Z")]
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[schema(example = json!({
+    "title": "New Todo Item",
+    "content": "Description with **markdown** support"
+}))]
 pub struct CreateTodoRequest {
+    #[schema(
+        example = "Complete project documentation",
+        min_length = 1,
+        max_length = 255
+    )]
     pub title: String,
+    #[schema(
+        example = "Write comprehensive documentation including **API specs** and usage examples",
+        max_length = 10000
+    )]
     pub content: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
+#[schema(example = json!({
+    "title": "Updated Todo Title",
+    "content": "Updated content with **markdown**",
+    "completed": true
+}))]
 pub struct UpdateTodoRequest {
+    #[schema(example = "Updated Todo Title", min_length = 1, max_length = 255)]
     pub title: Option<String>,
+    #[schema(example = "Updated content with **markdown**", max_length = 10000)]
     pub content: Option<String>,
+    #[schema(example = true)]
     pub completed: Option<bool>,
 }
 
@@ -40,6 +81,50 @@ pub struct UpdateTodoRequest {
 pub struct ApiResponse<T> {
     pub success: bool,
     pub data: Option<T>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({
+    "success": true,
+    "data": {
+        "id": "018c8f3e-7c4b-7f2a-9b1d-3e4f5a6b7c8d",
+        "title": "Sample Todo",
+        "content": "This is a **markdown** todo item",
+        "completed": false,
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z"
+    },
+    "error": null
+}))]
+pub struct TodoResponse {
+    #[schema(example = true)]
+    pub success: bool,
+    pub data: Option<Todo>,
+    #[schema(example = "Error message if any")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(example = json!({
+    "success": true,
+    "data": [
+        {
+            "id": "018c8f3e-7c4b-7f2a-9b1d-3e4f5a6b7c8d",
+            "title": "Sample Todo",
+            "content": "This is a **markdown** todo item",
+            "completed": false,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    ],
+    "error": null
+}))]
+pub struct TodoListResponse {
+    #[schema(example = true)]
+    pub success: bool,
+    pub data: Option<Vec<Todo>>,
+    #[schema(example = "Error message if any")]
     pub error: Option<String>,
 }
 
@@ -61,6 +146,63 @@ impl<T> ApiResponse<T> {
     }
 }
 
+impl From<ApiResponse<Todo>> for TodoResponse {
+    fn from(response: ApiResponse<Todo>) -> Self {
+        Self {
+            success: response.success,
+            data: response.data,
+            error: response.error,
+        }
+    }
+}
+
+impl From<ApiResponse<Vec<Todo>>> for TodoListResponse {
+    fn from(response: ApiResponse<Vec<Todo>>) -> Self {
+        Self {
+            success: response.success,
+            data: response.data,
+            error: response.error,
+        }
+    }
+}
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        health_check,
+        get_todos,
+        create_todo,
+        get_todo,
+        update_todo,
+        delete_todo
+    ),
+    components(
+        schemas(Todo, CreateTodoRequest, UpdateTodoRequest, TodoResponse, TodoListResponse)
+    ),
+    tags(
+        (name = "Health", description = "Health check endpoints"),
+        (name = "Todos", description = "Todo management API")
+    ),
+    info(
+        title = "MD-Todo API",
+        description = "A markdown-based todo management API built with Rust and axum",
+        version = "1.0.0",
+        contact(
+            name = "MD-Todo Team",
+            email = "contact@md-todo.com"
+        ),
+        license(
+            name = "MIT",
+            url = "https://opensource.org/licenses/MIT"
+        )
+    ),
+    servers(
+        (url = "http://localhost:8000", description = "Local development server"),
+        (url = "https://api.md-todo.com", description = "Production server")
+    )
+)]
+pub struct ApiDoc;
+
 pub type DatabasePool = Pool<Postgres>;
 
 pub async fn create_database_pool(database_url: &str) -> Result<DatabasePool, sqlx::Error> {
@@ -74,7 +216,11 @@ pub trait TodoRepositoryTrait: Send + Sync {
     async fn create_todo(&self, todo: &Todo) -> Result<Todo, TodoError>;
     async fn get_all_todos(&self) -> Result<Vec<Todo>, TodoError>;
     async fn get_todo_by_id(&self, id: Uuid) -> Result<Option<Todo>, TodoError>;
-    async fn update_todo(&self, id: Uuid, updates: &UpdateTodoRequest) -> Result<Option<Todo>, TodoError>;
+    async fn update_todo(
+        &self,
+        id: Uuid,
+        updates: &UpdateTodoRequest,
+    ) -> Result<Option<Todo>, TodoError>;
     async fn delete_todo(&self, id: Uuid) -> Result<bool, TodoError>;
 }
 
@@ -87,7 +233,6 @@ impl DatabaseTodoRepository {
         Self { pool }
     }
 }
-
 
 #[async_trait]
 impl TodoRepositoryTrait for DatabaseTodoRepository {
@@ -113,7 +258,10 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
             Box::new(e) as TodoError
         })?;
 
-        tracing::debug!("DatabaseTodoRepository: Successfully created todo with id: {}", row.id);
+        tracing::debug!(
+            "DatabaseTodoRepository: Successfully created todo with id: {}",
+            row.id
+        );
         Ok(row)
     }
 
@@ -124,7 +272,7 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
             SELECT id, title, content, completed, created_at, updated_at
             FROM todos
             ORDER BY created_at DESC
-            "#
+            "#,
         )
         .fetch_all(&self.pool)
         .await
@@ -133,7 +281,10 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
             Box::new(e) as TodoError
         })?;
 
-        tracing::debug!("DatabaseTodoRepository: Successfully fetched {} todos", rows.len());
+        tracing::debug!(
+            "DatabaseTodoRepository: Successfully fetched {} todos",
+            rows.len()
+        );
         Ok(rows)
     }
 
@@ -150,19 +301,30 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| {
-            tracing::error!("DatabaseTodoRepository: Failed to fetch todo with id {}: {}", id, e);
+            tracing::error!(
+                "DatabaseTodoRepository: Failed to fetch todo with id {}: {}",
+                id,
+                e
+            );
             Box::new(e) as TodoError
         })?;
 
         if row.is_some() {
-            tracing::debug!("DatabaseTodoRepository: Successfully fetched todo with id: {}", id);
+            tracing::debug!(
+                "DatabaseTodoRepository: Successfully fetched todo with id: {}",
+                id
+            );
         } else {
             tracing::debug!("DatabaseTodoRepository: Todo not found with id: {}", id);
         }
         Ok(row)
     }
 
-    async fn update_todo(&self, id: Uuid, updates: &UpdateTodoRequest) -> Result<Option<Todo>, TodoError> {
+    async fn update_todo(
+        &self,
+        id: Uuid,
+        updates: &UpdateTodoRequest,
+    ) -> Result<Option<Todo>, TodoError> {
         tracing::debug!("DatabaseTodoRepository: Updating todo with id: {}", id);
         let row = sqlx::query_as::<_, Todo>(
             r#"
@@ -183,14 +345,24 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| {
-            tracing::error!("DatabaseTodoRepository: Failed to update todo with id {}: {}", id, e);
+            tracing::error!(
+                "DatabaseTodoRepository: Failed to update todo with id {}: {}",
+                id,
+                e
+            );
             Box::new(e) as TodoError
         })?;
 
         if row.is_some() {
-            tracing::debug!("DatabaseTodoRepository: Successfully updated todo with id: {}", id);
+            tracing::debug!(
+                "DatabaseTodoRepository: Successfully updated todo with id: {}",
+                id
+            );
         } else {
-            tracing::debug!("DatabaseTodoRepository: Todo not found for update with id: {}", id);
+            tracing::debug!(
+                "DatabaseTodoRepository: Todo not found for update with id: {}",
+                id
+            );
         }
         Ok(row)
     }
@@ -207,113 +379,193 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
         .execute(&self.pool)
         .await
         .map_err(|e| {
-            tracing::error!("DatabaseTodoRepository: Failed to delete todo with id {}: {}", id, e);
+            tracing::error!(
+                "DatabaseTodoRepository: Failed to delete todo with id {}: {}",
+                id,
+                e
+            );
             Box::new(e) as TodoError
         })?;
 
         let deleted = result.rows_affected() > 0;
         if deleted {
-            tracing::debug!("DatabaseTodoRepository: Successfully deleted todo with id: {}", id);
+            tracing::debug!(
+                "DatabaseTodoRepository: Successfully deleted todo with id: {}",
+                id
+            );
         } else {
-            tracing::debug!("DatabaseTodoRepository: Todo not found for deletion with id: {}", id);
+            tracing::debug!(
+                "DatabaseTodoRepository: Todo not found for deletion with id: {}",
+                id
+            );
         }
         Ok(deleted)
     }
 }
 
-
+#[utoipa::path(
+    get,
+    path = "/health",
+    responses(
+        (status = 200, description = "Server is healthy", body = String, example = json!("OK"))
+    ),
+    tag = "Health"
+)]
 pub async fn health_check() -> &'static str {
     "OK"
 }
 
-pub async fn get_todos<R: TodoRepositoryTrait>(State(repository): State<Arc<R>>) -> Result<Json<ApiResponse<Vec<Todo>>>, StatusCode> {
+#[utoipa::path(
+    get,
+    path = "/api/todos",
+    responses(
+        (status = 200, description = "List of todos", body = TodoListResponse),
+        (status = 500, description = "Internal server error")
+    ),
+    tag = "Todos"
+)]
+pub async fn get_todos<R: TodoRepositoryTrait>(
+    State(repository): State<Arc<R>>,
+) -> Result<Json<TodoListResponse>, StatusCode> {
     tracing::info!("Getting all todos");
     match repository.get_all_todos().await {
         Ok(todos) => {
             tracing::info!("Successfully retrieved {} todos", todos.len());
-            Ok(Json(ApiResponse::success(todos)))
-        },
+            Ok(Json(ApiResponse::success(todos).into()))
+        }
         Err(e) => {
             tracing::error!("Failed to get todos: {}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
-        },
+        }
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/todos",
+    request_body = CreateTodoRequest,
+    responses(
+        (status = 200, description = "Todo created successfully", body = TodoResponse),
+        (status = 400, description = "Bad request - validation failed"),
+        (status = 500, description = "Internal server error")
+    ),
+    tag = "Todos"
+)]
 pub async fn create_todo<R: TodoRepositoryTrait>(
     State(repository): State<Arc<R>>,
     Json(request): Json<CreateTodoRequest>,
-) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
+) -> Result<Json<TodoResponse>, StatusCode> {
     tracing::info!("Creating new todo with title: '{}'", request.title);
-    
+
     if let Err(e) = request.validate() {
         tracing::warn!("Validation failed for create todo request: {}", e);
         return Err(StatusCode::BAD_REQUEST);
     }
 
     let todo = Todo::new(&request.title, &request.content);
-    
+
     match repository.create_todo(&todo).await {
         Ok(created_todo) => {
             tracing::info!("Successfully created todo with id: {}", created_todo.id);
-            Ok(Json(ApiResponse::success(created_todo)))
-        },
+            Ok(Json(ApiResponse::success(created_todo).into()))
+        }
         Err(e) => {
             tracing::error!("Failed to create todo: {}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
-        },
+        }
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/todos/{id}",
+    params(
+        ("id" = Uuid, Path, description = "Todo ID")
+    ),
+    responses(
+        (status = 200, description = "Todo found", body = TodoResponse),
+        (status = 404, description = "Todo not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    tag = "Todos"
+)]
 pub async fn get_todo<R: TodoRepositoryTrait>(
     State(repository): State<Arc<R>>,
     Path(id): Path<Uuid>,
-) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
+) -> Result<Json<TodoResponse>, StatusCode> {
     tracing::info!("Getting todo with id: {}", id);
     match repository.get_todo_by_id(id).await {
         Ok(Some(todo)) => {
             tracing::info!("Successfully retrieved todo with id: {}", id);
-            Ok(Json(ApiResponse::success(todo)))
-        },
+            Ok(Json(ApiResponse::success(todo).into()))
+        }
         Ok(None) => {
             tracing::warn!("Todo not found with id: {}", id);
             Err(StatusCode::NOT_FOUND)
-        },
+        }
         Err(e) => {
             tracing::error!("Failed to get todo with id {}: {}", id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
-        },
+        }
     }
 }
 
+#[utoipa::path(
+    patch,
+    path = "/api/todos/{id}",
+    params(
+        ("id" = Uuid, Path, description = "Todo ID")
+    ),
+    request_body = UpdateTodoRequest,
+    responses(
+        (status = 200, description = "Todo updated successfully", body = TodoResponse),
+        (status = 400, description = "Bad request - validation failed"),
+        (status = 404, description = "Todo not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    tag = "Todos"
+)]
 pub async fn update_todo<R: TodoRepositoryTrait>(
     State(repository): State<Arc<R>>,
     Path(id): Path<Uuid>,
     Json(request): Json<UpdateTodoRequest>,
-) -> Result<Json<ApiResponse<Todo>>, StatusCode> {
+) -> Result<Json<TodoResponse>, StatusCode> {
     tracing::info!("Updating todo with id: {}", id);
-    
+
     if let Err(e) = request.validate() {
         tracing::warn!("Validation failed for update todo request: {}", e);
         return Err(StatusCode::BAD_REQUEST);
     }
-    
+
     match repository.update_todo(id, &request).await {
         Ok(Some(todo)) => {
             tracing::info!("Successfully updated todo with id: {}", id);
-            Ok(Json(ApiResponse::success(todo)))
-        },
+            Ok(Json(ApiResponse::success(todo).into()))
+        }
         Ok(None) => {
             tracing::warn!("Todo not found for update with id: {}", id);
             Err(StatusCode::NOT_FOUND)
-        },
+        }
         Err(e) => {
             tracing::error!("Failed to update todo with id {}: {}", id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
-        },
+        }
     }
 }
 
+#[utoipa::path(
+    delete,
+    path = "/api/todos/{id}",
+    params(
+        ("id" = Uuid, Path, description = "Todo ID")
+    ),
+    responses(
+        (status = 204, description = "Todo deleted successfully"),
+        (status = 404, description = "Todo not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    tag = "Todos"
+)]
 pub async fn delete_todo<R: TodoRepositoryTrait>(
     State(repository): State<Arc<R>>,
     Path(id): Path<Uuid>,
@@ -323,18 +575,17 @@ pub async fn delete_todo<R: TodoRepositoryTrait>(
         Ok(true) => {
             tracing::info!("Successfully deleted todo with id: {}", id);
             Ok(StatusCode::NO_CONTENT)
-        },
+        }
         Ok(false) => {
             tracing::warn!("Todo not found for deletion with id: {}", id);
             Err(StatusCode::NOT_FOUND)
-        },
+        }
         Err(e) => {
             tracing::error!("Failed to delete todo with id {}: {}", id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
-        },
+        }
     }
 }
-
 
 impl Todo {
     pub fn new(title: &str, content: &str) -> Self {
@@ -447,6 +698,7 @@ impl UpdateTodoRequest {
 
 pub fn create_app_with_repository<R: TodoRepositoryTrait + 'static>(repository: Arc<R>) -> Router {
     Router::new()
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .route("/health", get(health_check))
         .route("/api/todos", get(get_todos::<R>))
         .route("/api/todos", post(create_todo::<R>))
@@ -456,7 +708,6 @@ pub fn create_app_with_repository<R: TodoRepositoryTrait + 'static>(repository: 
         .layer(CorsLayer::permissive())
         .with_state(repository)
 }
-
 
 pub fn create_app_with_database(pool: DatabasePool) -> Router {
     let repository = Arc::new(DatabaseTodoRepository::new(pool));
@@ -513,7 +764,10 @@ mod tests {
         let long_content = "a".repeat(10001);
         let result = Todo::validate_content(&long_content);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Content cannot exceed 10000 characters");
+        assert_eq!(
+            result.unwrap_err(),
+            "Content cannot exceed 10000 characters"
+        );
     }
 
     #[test]
@@ -577,7 +831,7 @@ mod tests {
     #[test]
     fn test_todo_new_constructor() {
         let todo = Todo::new("Test Title", "Test Content");
-        
+
         assert_eq!(todo.title, "Test Title");
         assert_eq!(todo.content, "Test Content");
         assert_eq!(todo.completed, false);
@@ -590,11 +844,11 @@ mod tests {
     fn test_todo_update_content() {
         let mut todo = Todo::new("Original Title", "Original Content");
         let original_created_at = todo.created_at;
-        
+
         std::thread::sleep(std::time::Duration::from_millis(1));
-        
+
         todo.update_content("Updated Content");
-        
+
         assert_eq!(todo.content, "Updated Content");
         assert_eq!(todo.created_at, original_created_at);
         assert!(todo.updated_at > original_created_at);
@@ -604,11 +858,11 @@ mod tests {
     fn test_todo_update_title() {
         let mut todo = Todo::new("Original Title", "Original Content");
         let original_created_at = todo.created_at;
-        
+
         std::thread::sleep(std::time::Duration::from_millis(1));
-        
+
         todo.update_title("Updated Title");
-        
+
         assert_eq!(todo.title, "Updated Title");
         assert_eq!(todo.created_at, original_created_at);
         assert!(todo.updated_at > original_created_at);
@@ -618,17 +872,17 @@ mod tests {
     fn test_todo_toggle_completed() {
         let mut todo = Todo::new("Test Title", "Test Content");
         let original_created_at = todo.created_at;
-        
+
         assert_eq!(todo.completed, false);
-        
+
         std::thread::sleep(std::time::Duration::from_millis(1));
-        
+
         todo.toggle_completed();
-        
+
         assert_eq!(todo.completed, true);
         assert_eq!(todo.created_at, original_created_at);
         assert!(todo.updated_at > original_created_at);
-        
+
         todo.toggle_completed();
         assert_eq!(todo.completed, false);
     }
@@ -637,7 +891,7 @@ mod tests {
     fn test_todo_serialization() {
         let todo = Todo::new("Test Title", "Test Content");
         let json_result = serde_json::to_string(&todo);
-        
+
         assert!(json_result.is_ok());
         let json_string = json_result.unwrap();
         assert!(json_string.contains("Test Title"));
@@ -656,10 +910,10 @@ mod tests {
             "updated_at": "2024-01-01T00:00:00Z"
         }
         "#;
-        
+
         let result: Result<Todo, _> = serde_json::from_str(todo_json);
         assert!(result.is_ok());
-        
+
         let todo = result.unwrap();
         assert_eq!(todo.title, "Test Title");
         assert_eq!(todo.content, "Test Content");
@@ -670,7 +924,7 @@ mod tests {
     fn test_api_response_success() {
         let todo = Todo::new("Test", "Content");
         let response = ApiResponse::success(todo.clone());
-        
+
         assert!(response.success);
         assert!(response.data.is_some());
         assert!(response.error.is_none());
@@ -680,7 +934,7 @@ mod tests {
     #[test]
     fn test_api_response_error() {
         let response: ApiResponse<Todo> = ApiResponse::error("Test error".to_string());
-        
+
         assert!(!response.success);
         assert!(response.data.is_none());
         assert!(response.error.is_some());
@@ -750,7 +1004,10 @@ mod tests {
 
         let result = invalid_request.validate();
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Content cannot exceed 10000 characters");
+        assert_eq!(
+            result.unwrap_err(),
+            "Content cannot exceed 10000 characters"
+        );
     }
 
     #[test]
@@ -788,14 +1045,17 @@ mod tests {
 
         let result = invalid_request.validate();
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Content cannot exceed 10000 characters");
+        assert_eq!(
+            result.unwrap_err(),
+            "Content cannot exceed 10000 characters"
+        );
     }
 
     #[test]
     fn test_todo_new_constructor_with_validation() {
         let result = Todo::new_with_validation("Valid Title", "Valid Content");
         assert!(result.is_ok());
-        
+
         let todo = result.unwrap();
         assert_eq!(todo.title, "Valid Title");
         assert_eq!(todo.content, "Valid Content");
@@ -819,10 +1079,11 @@ mod tests {
     #[test]
     fn test_todo_update_with_validation() {
         let mut todo = Todo::new("Original Title", "Original Content");
-        
-        let result = todo.update_with_validation(Some("Updated Title"), Some("Updated Content"), Some(true));
+
+        let result =
+            todo.update_with_validation(Some("Updated Title"), Some("Updated Content"), Some(true));
         assert!(result.is_ok());
-        
+
         assert_eq!(todo.title, "Updated Title");
         assert_eq!(todo.content, "Updated Content");
         assert_eq!(todo.completed, true);
@@ -831,11 +1092,11 @@ mod tests {
     #[test]
     fn test_todo_update_with_validation_empty_title() {
         let mut todo = Todo::new("Original Title", "Original Content");
-        
+
         let result = todo.update_with_validation(Some(""), None, None);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Title cannot be empty");
-        
+
         // Original values should remain unchanged
         assert_eq!(todo.title, "Original Title");
         assert_eq!(todo.content, "Original Content");
@@ -849,7 +1110,10 @@ mod tests {
 
     #[test]
     fn test_todo_markdown_content_processing() {
-        let todo = Todo::new("Test Title", "# Header\n\n**Bold** text with [link](https://example.com)");
+        let todo = Todo::new(
+            "Test Title",
+            "# Header\n\n**Bold** text with [link](https://example.com)",
+        );
         assert!(todo.content.contains("# Header"));
         assert!(todo.content.contains("**Bold**"));
         assert!(todo.content.contains("[link](https://example.com)"));
@@ -859,7 +1123,7 @@ mod tests {
     fn test_todo_uuid_generation() {
         let todo1 = Todo::new("Title 1", "Content 1");
         let todo2 = Todo::new("Title 2", "Content 2");
-        
+
         assert_ne!(todo1.id, todo2.id);
         assert!(todo1.id.get_version() == Some(uuid::Version::SortRand));
         assert!(todo2.id.get_version() == Some(uuid::Version::SortRand));
@@ -870,7 +1134,7 @@ mod tests {
         let todo1 = Todo::new("Title 1", "Content 1");
         std::thread::sleep(std::time::Duration::from_millis(1));
         let todo2 = Todo::new("Title 2", "Content 2");
-        
+
         assert!(todo1.created_at < todo2.created_at);
     }
 
@@ -878,7 +1142,7 @@ mod tests {
     fn test_todo_clone() {
         let original = Todo::new("Original Title", "Original Content");
         let cloned = original.clone();
-        
+
         assert_eq!(original.id, cloned.id);
         assert_eq!(original.title, cloned.title);
         assert_eq!(original.content, cloned.content);
