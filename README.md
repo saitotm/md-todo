@@ -16,8 +16,9 @@ A modern web-based todo application that allows users to create, manage, and org
 This application follows a modern full-stack architecture:
 
 - **Frontend**: React + Remix with TypeScript
-- **Backend**: Rust + axum web framework
+- **Backend**: Rust + axum web framework with OpenAPI documentation
 - **Database**: PostgreSQL with UUID v7 primary keys
+- **API Documentation**: OpenAPI 3.0.3 with Swagger UI
 - **Infrastructure**: Docker containerization for development and deployment
 
 ## Project Structure
@@ -32,7 +33,10 @@ md-todo/
 ├── backend/                 # Rust + axum backend API
 │   ├── src/                # Rust source code
 │   │   ├── main.rs         # Application entry point
-│   │   └── lib.rs          # Core application logic
+│   │   ├── lib.rs          # Core application logic
+│   │   └── bin/            # Development tools
+│   │       └── generate_openapi.rs  # OpenAPI spec generator
+│   ├── openapi.json        # Generated OpenAPI specification
 │   ├── Cargo.toml          # Rust dependencies
 │   └── Dockerfile          # Backend container configuration
 ├── database/               # Database configuration and migrations
@@ -54,12 +58,14 @@ md-todo/
 ### Quick Start with Docker
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/saitotm/md-todo.git
    cd md-todo
    ```
 
 2. **Start the application**
+
    ```bash
    docker-compose up -d
    ```
@@ -76,10 +82,12 @@ md-todo/
 The easiest way to get started is using the devcontainer, which provides a complete development environment:
 
 1. **Prerequisites**
+
    - VS Code with Dev Containers extension
    - Docker Desktop
 
 2. **Setup (5 minutes)**
+
    ```bash
    git clone https://github.com/saitotm/md-todo.git
    cd md-todo
@@ -87,6 +95,7 @@ The easiest way to get started is using the devcontainer, which provides a compl
    ```
 
 3. **Open in DevContainer**
+
    - VS Code will prompt "Reopen in Container"
    - Or use Command Palette: `Dev Containers: Reopen in Container`
 
@@ -97,6 +106,7 @@ The easiest way to get started is using the devcontainer, which provides a compl
    ```
 
 The devcontainer includes:
+
 - Node.js 20 + npm
 - Rust toolchain (cargo, rustc, clippy, rustfmt)
 - Docker CLI for container management
@@ -106,6 +116,7 @@ The devcontainer includes:
 #### Option 2: Local Development
 
 #### Frontend Development
+
 ```bash
 cd frontend
 npm install
@@ -113,36 +124,52 @@ npm run dev
 ```
 
 #### Backend Development
+
 ```bash
 cd backend
 cargo run
+
+# Generate OpenAPI documentation
+cargo run --bin generate_openapi
 ```
 
 #### Database Setup
+
 The database is automatically initialized with sample data when using Docker Compose.
 
 ## API Documentation
 
-### Base URL
+### Interactive Documentation (Recommended)
+
+Once the backend server is running, visit:
+
 ```
-http://localhost:8000
+http://localhost:8000/swagger-ui
 ```
 
-### Endpoints
+### OpenAPI Specification
+
+- **JSON Format**: `http://localhost:8000/api-docs/openapi.json`
+- **Local File**: Run `cargo run --bin generate_openapi` to generate `openapi.json`
+
+### API Endpoints
 
 #### Health Check
+
 - `GET /health` - Server health status
 
 #### Todos
+
 - `GET /api/todos` - Get all todos
 - `POST /api/todos` - Create a new todo
 - `GET /api/todos/:id` - Get a specific todo
-- `PUT /api/todos/:id` - Update a todo
+- `PATCH /api/todos/:id` - Update a todo (partial update)
 - `DELETE /api/todos/:id` - Delete a todo
 
 ### Request/Response Format
 
 #### Create Todo
+
 ```json
 {
   "title": "Task Title",
@@ -151,6 +178,7 @@ http://localhost:8000
 ```
 
 #### Todo Response
+
 ```json
 {
   "success": true,
@@ -168,19 +196,23 @@ http://localhost:8000
 ## Testing
 
 ### Frontend Testing
+
 ```bash
 cd frontend
 npm test
 ```
 
 ### Backend Testing
+
 ```bash
 cd backend
 cargo test
 ```
 
 ### CI/CD
+
 The project includes GitHub Actions workflows for:
+
 - Automated testing (frontend and backend)
 - Code quality checks (ESLint, Clippy)
 - Format validation
@@ -189,21 +221,25 @@ The project includes GitHub Actions workflows for:
 ## Docker Configuration
 
 ### Services
+
 - **frontend**: React + Remix application (port 3000)
 - **backend**: Rust + axum API server (port 8000)
 - **db**: PostgreSQL database (port 5432)
 
 ### Volumes
+
 - `postgres_data`: Database persistence
 - `cargo_cache`: Rust dependencies cache
 - `target_cache`: Rust build cache
 
 ### Environment Variables
+
 See `.env.example` for required environment variables.
 
 ## Database Schema
 
 ### todos table
+
 - `id`: UUID (Primary Key, generated using uuidv7())
 - `title`: TEXT - Task title
 - `content`: TEXT - Task content in Markdown format

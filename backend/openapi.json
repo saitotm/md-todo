@@ -1,0 +1,411 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "MD-Todo API",
+    "description": "A markdown-based todo management API built with Rust and axum",
+    "contact": {
+      "name": "MD-Todo Team",
+      "email": "contact@md-todo.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Local development server"
+    },
+    {
+      "url": "https://api.md-todo.com",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/api/todos": {
+      "get": {
+        "tags": [
+          "Todos"
+        ],
+        "operationId": "get_todos",
+        "responses": {
+          "200": {
+            "description": "List of todos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoListResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Todos"
+        ],
+        "operationId": "create_todo",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTodoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Todo created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation failed"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/todos/{id}": {
+      "get": {
+        "tags": [
+          "Todos"
+        ],
+        "operationId": "get_todo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Todo ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Todo found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Todo not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Todos"
+        ],
+        "operationId": "delete_todo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Todo ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Todo deleted successfully"
+          },
+          "404": {
+            "description": "Todo not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Todos"
+        ],
+        "operationId": "update_todo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Todo ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTodoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Todo updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation failed"
+          },
+          "404": {
+            "description": "Todo not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "operationId": "health_check",
+        "responses": {
+          "200": {
+            "description": "Server is healthy",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "OK"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateTodoRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "example": "Write comprehensive documentation including **API specs** and usage examples",
+            "maxLength": 10000
+          },
+          "title": {
+            "type": "string",
+            "example": "Complete project documentation",
+            "maxLength": 255,
+            "minLength": 1
+          }
+        },
+        "example": {
+          "content": "Description with **markdown** support",
+          "title": "New Todo Item"
+        }
+      },
+      "Todo": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "content",
+          "completed",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "completed": {
+            "type": "boolean",
+            "example": false
+          },
+          "content": {
+            "type": "string",
+            "example": "Write comprehensive documentation including **API specs** and usage examples"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-01T00:00:00Z"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "018c8f3e-7c4b-7f2a-9b1d-3e4f5a6b7c8d"
+          },
+          "title": {
+            "type": "string",
+            "example": "Complete project documentation"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-01T00:00:00Z"
+          }
+        },
+        "example": {
+          "completed": false,
+          "content": "This is a **markdown** todo item",
+          "created_at": "2024-01-01T00:00:00Z",
+          "id": "018c8f3e-7c4b-7f2a-9b1d-3e4f5a6b7c8d",
+          "title": "Sample Todo",
+          "updated_at": "2024-01-01T00:00:00Z"
+        }
+      },
+      "TodoListResponse": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Todo"
+            },
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "example": "Error message if any",
+            "nullable": true
+          },
+          "success": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "example": {
+          "data": [
+            {
+              "completed": false,
+              "content": "This is a **markdown** todo item",
+              "created_at": "2024-01-01T00:00:00Z",
+              "id": "018c8f3e-7c4b-7f2a-9b1d-3e4f5a6b7c8d",
+              "title": "Sample Todo",
+              "updated_at": "2024-01-01T00:00:00Z"
+            }
+          ],
+          "error": null,
+          "success": true
+        }
+      },
+      "TodoResponse": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Todo"
+              }
+            ],
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "example": "Error message if any",
+            "nullable": true
+          },
+          "success": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "example": {
+          "data": {
+            "completed": false,
+            "content": "This is a **markdown** todo item",
+            "created_at": "2024-01-01T00:00:00Z",
+            "id": "018c8f3e-7c4b-7f2a-9b1d-3e4f5a6b7c8d",
+            "title": "Sample Todo",
+            "updated_at": "2024-01-01T00:00:00Z"
+          },
+          "error": null,
+          "success": true
+        }
+      },
+      "UpdateTodoRequest": {
+        "type": "object",
+        "properties": {
+          "completed": {
+            "type": "boolean",
+            "example": true,
+            "nullable": true
+          },
+          "content": {
+            "type": "string",
+            "example": "Updated content with **markdown**",
+            "nullable": true,
+            "maxLength": 10000
+          },
+          "title": {
+            "type": "string",
+            "example": "Updated Todo Title",
+            "nullable": true,
+            "maxLength": 255,
+            "minLength": 1
+          }
+        },
+        "example": {
+          "completed": true,
+          "content": "Updated content with **markdown**",
+          "title": "Updated Todo Title"
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Health check endpoints"
+    },
+    {
+      "name": "Todos",
+      "description": "Todo management API"
+    }
+  ]
+}

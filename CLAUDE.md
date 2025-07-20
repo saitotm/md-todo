@@ -20,7 +20,9 @@ MD-Todo は、マークダウン形式でタスクを管理できるモダンな
 
 - Rust
 - axum (非同期 Web フレームワーク)
-- 直接 SQL クエリ（将来的に sqlx 導入予定）
+- sqlx (PostgreSQL クエリビルダー)
+- utoipa (OpenAPI 仕様書生成)
+- tracing (構造化ログ)
 - Cargo (ビルドツール)
 
 **データベース:**
@@ -58,8 +60,11 @@ md-todo/
 ├── backend/             # Rust + axum バックエンド
 │   ├── src/
 │   │   ├── main.rs      # エントリーポイント
-│   │   └── lib.rs       # コアロジック
+│   │   ├── lib.rs       # コアロジック
+│   │   └── bin/         # 開発ツール
+│   │       └── generate_openapi.rs  # OpenAPI仕様書生成
 │   ├── tests/           # テストファイル
+│   ├── openapi.json     # 生成されたOpenAPI仕様書
 │   └── Cargo.toml       # Rust依存関係
 ├── database/            # データベース設定
 │   ├── migrations/      # マイグレーションファイル
@@ -92,6 +97,9 @@ cargo test        # テスト実行
 cargo build       # ビルド
 cargo clippy      # リント実行
 cargo fmt         # フォーマット
+
+# OpenAPI仕様書生成
+cargo run --bin generate_openapi  # openapi.json生成
 ```
 
 ## 開発フロー
@@ -206,6 +214,13 @@ cargo fmt
 cargo check
 ```
 
+#### OpenAPI 関連
+
+```bash
+# OpenAPI仕様書生成（JSONファイル）
+cargo run --bin generate_openapi
+```
+
 ## データベース
 
 ### スキーマ
@@ -239,6 +254,24 @@ docker compose up -d db
 http://localhost:8000
 ```
 
+### OpenAPI ドキュメント
+
+#### OpenAPI 仕様書（JSON）
+
+```
+http://localhost:8000/api-docs/openapi.json
+```
+
+- 標準 OpenAPI 3.0.3 フォーマット
+- 他のツールとの統合に利用
+
+#### ローカルファイル生成
+
+```bash
+cargo run --bin generate_openapi
+# -> openapi.json ファイルが生成される
+```
+
 ### エンドポイント
 
 #### ヘルスチェック
@@ -250,7 +283,7 @@ http://localhost:8000
 - `GET /api/todos` - 全 Todo 取得
 - `POST /api/todos` - Todo 作成
 - `GET /api/todos/:id` - 特定 Todo 取得
-- `PUT /api/todos/:id` - Todo 更新
+- `PATCH /api/todos/:id` - Todo 更新（部分更新）
 - `DELETE /api/todos/:id` - Todo 削除
 
 ### レスポンス形式
@@ -373,6 +406,13 @@ API_URL=http://localhost:8000
    cargo build
    ```
 
+4. **OpenAPI 仕様書の更新**
+
+   ```bash
+   # API変更後、仕様書を再生成
+   cargo run --bin generate_openapi
+   ```
+
 ## 開発のベストプラクティス
 
 1. **小さな単位でのコミット**
@@ -390,7 +430,12 @@ API_URL=http://localhost:8000
    - プルリクエストでの相互レビュー
    - 自動テストの通過を確認
 
-4. **セキュリティ**
+4. **API 文書化**
+
+   - API 変更時は utoipa アノテーションも更新する
+   - OpenAPI 仕様書を定期的に生成・確認する
+
+5. **セキュリティ**
    - 秘密情報をコミットしない
    - 依存関係の脆弱性を定期的にチェック
 
@@ -399,5 +444,7 @@ API_URL=http://localhost:8000
 - [React 公式ドキュメント](https://react.dev/)
 - [Remix 公式ドキュメント](https://remix.run/)
 - [axum 公式ドキュメント](https://docs.rs/axum/)
+- [utoipa 公式ドキュメント](https://docs.rs/utoipa/)
+- [OpenAPI 仕様](https://swagger.io/specification/)
 - [PostgreSQL 公式ドキュメント](https://www.postgresql.org/docs/)
 - [Docker 公式ドキュメント](https://docs.docker.com/)
