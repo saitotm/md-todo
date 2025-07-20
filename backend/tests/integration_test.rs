@@ -5,7 +5,7 @@ use axum::{
 use async_trait::async_trait;
 use chrono::Utc;
 use md_todo_backend::{
-    create_app, create_app_with_repository, ApiResponse, CreateTodoRequest, MemoryTodoRepository, Todo, 
+    create_app_with_repository, ApiResponse, CreateTodoRequest, Todo, 
     TodoError, TodoRepositoryTrait, UpdateTodoRequest
 };
 use serde_json::json;
@@ -14,11 +14,102 @@ use tokio::sync::RwLock;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-// Use the same create_app function as production
+// Mock repository for testing
+pub struct MockTodoRepository {
+    should_fail: Arc<RwLock<bool>>,
+    todos: Arc<RwLock<Vec<Todo>>>,
+}
+
+impl MockTodoRepository {
+    pub fn new() -> Self {
+        Self {
+            should_fail: Arc::new(RwLock::new(false)),
+            todos: Arc::new(RwLock::new(Vec::new())),
+        }
+    }
+
+    pub async fn set_should_fail(&self, fail: bool) {
+        *self.should_fail.write().await = fail;
+    }
+}
+
+#[async_trait]
+impl TodoRepositoryTrait for MockTodoRepository {
+    async fn create_todo(&self, todo: &Todo) -> Result<Todo, TodoError> {
+        if *self.should_fail.read().await {
+            return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
+        }
+        
+        let mut todos = self.todos.write().await;
+        todos.push(todo.clone());
+        Ok(todo.clone())
+    }
+
+    async fn get_all_todos(&self) -> Result<Vec<Todo>, TodoError> {
+        if *self.should_fail.read().await {
+            return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
+        }
+        
+        let todos = self.todos.read().await;
+        Ok(todos.clone())
+    }
+
+    async fn get_todo_by_id(&self, id: Uuid) -> Result<Option<Todo>, TodoError> {
+        if *self.should_fail.read().await {
+            return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
+        }
+        
+        let todos = self.todos.read().await;
+        Ok(todos.iter().find(|t| t.id == id).cloned())
+    }
+
+    async fn update_todo(&self, id: Uuid, updates: &UpdateTodoRequest) -> Result<Option<Todo>, TodoError> {
+        if *self.should_fail.read().await {
+            return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
+        }
+        
+        let mut todos = self.todos.write().await;
+        if let Some(todo) = todos.iter_mut().find(|t| t.id == id) {
+            if let Some(title) = &updates.title {
+                todo.title = title.clone();
+            }
+            if let Some(content) = &updates.content {
+                todo.content = content.clone();
+            }
+            if let Some(completed) = updates.completed {
+                todo.completed = completed;
+            }
+            todo.updated_at = Utc::now();
+            Ok(Some(todo.clone()))
+        } else {
+            Ok(None)
+        }
+    }
+
+    async fn delete_todo(&self, id: Uuid) -> Result<bool, TodoError> {
+        if *self.should_fail.read().await {
+            return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
+        }
+        
+        let mut todos = self.todos.write().await;
+        if let Some(pos) = todos.iter().position(|t| t.id == id) {
+            todos.remove(pos);
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+}
+
+// Create test app with MockTodoRepository
+fn create_test_app() -> axum::Router {
+    let mock_repo = Arc::new(MockTodoRepository::new());
+    create_app_with_repository(mock_repo)
+}
 
 #[tokio::test]
 async fn test_health_check() {
-    let app = create_app();
+    let app = create_test_app();
 
     let response = app
         .oneshot(
@@ -40,7 +131,7 @@ async fn test_health_check() {
 
 #[tokio::test]
 async fn test_get_todos_empty() {
-    let app = create_app();
+    let app = create_test_app();
 
     let response = app
         .oneshot(
@@ -65,7 +156,7 @@ async fn test_get_todos_empty() {
 
 #[tokio::test]
 async fn test_create_todo() {
-    let app = create_app();
+    let app = create_test_app();
 
     let create_request = CreateTodoRequest {
         title: "Test Todo".to_string(),
@@ -100,7 +191,7 @@ async fn test_create_todo() {
 
 #[tokio::test]
 async fn test_get_todo_not_found() {
-    let app = create_app();
+    let app = create_test_app();
 
     let response = app
         .oneshot(
@@ -117,7 +208,7 @@ async fn test_get_todo_not_found() {
 
 #[tokio::test]
 async fn test_crud_operations() {
-    let app = create_app();
+    let app = create_test_app();
 
     // Create a todo
     let create_request = CreateTodoRequest {
@@ -220,93 +311,6 @@ async fn test_crud_operations() {
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
 }
 
-// Mock repository for testing error scenarios
-pub struct MockTodoRepository {
-    should_fail: Arc<RwLock<bool>>,
-    todos: Arc<RwLock<Vec<Todo>>>,
-}
-
-impl MockTodoRepository {
-    pub fn new() -> Self {
-        Self {
-            should_fail: Arc::new(RwLock::new(false)),
-            todos: Arc::new(RwLock::new(Vec::new())),
-        }
-    }
-
-    pub async fn set_should_fail(&self, fail: bool) {
-        *self.should_fail.write().await = fail;
-    }
-}
-
-#[async_trait]
-impl TodoRepositoryTrait for MockTodoRepository {
-    async fn create_todo(&self, todo: &Todo) -> Result<Todo, TodoError> {
-        if *self.should_fail.read().await {
-            return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
-        }
-        
-        let mut todos = self.todos.write().await;
-        todos.push(todo.clone());
-        Ok(todo.clone())
-    }
-
-    async fn get_all_todos(&self) -> Result<Vec<Todo>, TodoError> {
-        if *self.should_fail.read().await {
-            return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
-        }
-        
-        let todos = self.todos.read().await;
-        Ok(todos.clone())
-    }
-
-    async fn get_todo_by_id(&self, id: Uuid) -> Result<Option<Todo>, TodoError> {
-        if *self.should_fail.read().await {
-            return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
-        }
-        
-        let todos = self.todos.read().await;
-        Ok(todos.iter().find(|t| t.id == id).cloned())
-    }
-
-    async fn update_todo(&self, id: Uuid, updates: &UpdateTodoRequest) -> Result<Option<Todo>, TodoError> {
-        if *self.should_fail.read().await {
-            return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
-        }
-        
-        let mut todos = self.todos.write().await;
-        if let Some(todo) = todos.iter_mut().find(|t| t.id == id) {
-            if let Some(title) = &updates.title {
-                todo.title = title.clone();
-            }
-            if let Some(content) = &updates.content {
-                todo.content = content.clone();
-            }
-            if let Some(completed) = updates.completed {
-                todo.completed = completed;
-            }
-            todo.updated_at = Utc::now();
-            Ok(Some(todo.clone()))
-        } else {
-            Ok(None)
-        }
-    }
-
-    async fn delete_todo(&self, id: Uuid) -> Result<bool, TodoError> {
-        if *self.should_fail.read().await {
-            return Err(Box::new(sqlx::Error::RowNotFound) as TodoError);
-        }
-        
-        let mut todos = self.todos.write().await;
-        if let Some(pos) = todos.iter().position(|t| t.id == id) {
-            todos.remove(pos);
-            Ok(true)
-        } else {
-            Ok(false)
-        }
-    }
-}
-
 #[tokio::test]
 async fn test_database_error_handling() {
     let mock_repo = Arc::new(MockTodoRepository::new());
@@ -330,7 +334,7 @@ async fn test_database_error_handling() {
 
 #[tokio::test]
 async fn test_validation_error_handling() {
-    let app = create_app();
+    let app = create_test_app();
 
     // Test empty title validation
     let invalid_request = CreateTodoRequest {
@@ -351,40 +355,4 @@ async fn test_validation_error_handling() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-}
-
-#[tokio::test]
-async fn test_repository_trait_implementation() {
-    let repo = MemoryTodoRepository::new();
-    let todo = Todo::new("Test Title", "Test Content");
-    
-    // Test create
-    let created = repo.create_todo(&todo).await.unwrap();
-    assert_eq!(created.title, "Test Title");
-    
-    // Test get_all
-    let todos = repo.get_all_todos().await.unwrap();
-    assert_eq!(todos.len(), 1);
-    
-    // Test get_by_id
-    let found = repo.get_todo_by_id(created.id).await.unwrap();
-    assert!(found.is_some());
-    
-    // Test update
-    let update_req = UpdateTodoRequest {
-        title: Some("Updated Title".to_string()),
-        content: None,
-        completed: Some(true),
-    };
-    let updated = repo.update_todo(created.id, &update_req).await.unwrap();
-    assert!(updated.is_some());
-    assert_eq!(updated.unwrap().title, "Updated Title");
-    
-    // Test delete
-    let deleted = repo.delete_todo(created.id).await.unwrap();
-    assert!(deleted);
-    
-    // Verify deletion
-    let todos_after_delete = repo.get_all_todos().await.unwrap();
-    assert_eq!(todos_after_delete.len(), 0);
 }

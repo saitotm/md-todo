@@ -9,9 +9,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
-use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
@@ -63,7 +61,6 @@ impl<T> ApiResponse<T> {
     }
 }
 
-pub type TodoStore = Arc<RwLock<HashMap<Uuid, Todo>>>;
 pub type DatabasePool = Pool<Postgres>;
 
 pub async fn create_database_pool(database_url: &str) -> Result<DatabasePool, sqlx::Error> {
@@ -91,17 +88,6 @@ impl DatabaseTodoRepository {
     }
 }
 
-pub struct MemoryTodoRepository {
-    store: TodoStore,
-}
-
-impl MemoryTodoRepository {
-    pub fn new() -> Self {
-        Self {
-            store: Arc::new(RwLock::new(HashMap::new())),
-        }
-    }
-}
 
 #[async_trait]
 impl TodoRepositoryTrait for DatabaseTodoRepository {
@@ -235,52 +221,6 @@ impl TodoRepositoryTrait for DatabaseTodoRepository {
     }
 }
 
-#[async_trait]
-impl TodoRepositoryTrait for MemoryTodoRepository {
-    async fn create_todo(&self, todo: &Todo) -> Result<Todo, TodoError> {
-        let mut todos = self.store.write().await;
-        todos.insert(todo.id, todo.clone());
-        Ok(todo.clone())
-    }
-
-    async fn get_all_todos(&self) -> Result<Vec<Todo>, TodoError> {
-        let todos = self.store.read().await;
-        let mut todo_list: Vec<Todo> = todos.values().cloned().collect();
-        todo_list.sort_by(|a, b| b.created_at.cmp(&a.created_at));
-        Ok(todo_list)
-    }
-
-    async fn get_todo_by_id(&self, id: Uuid) -> Result<Option<Todo>, TodoError> {
-        let todos = self.store.read().await;
-        Ok(todos.get(&id).cloned())
-    }
-
-    async fn update_todo(&self, id: Uuid, updates: &UpdateTodoRequest) -> Result<Option<Todo>, TodoError> {
-        let mut todos = self.store.write().await;
-        
-        match todos.get_mut(&id) {
-            Some(todo) => {
-                if let Some(title) = &updates.title {
-                    todo.title = title.clone();
-                }
-                if let Some(content) = &updates.content {
-                    todo.content = content.clone();
-                }
-                if let Some(completed) = updates.completed {
-                    todo.completed = completed;
-                }
-                todo.updated_at = Utc::now();
-                Ok(Some(todo.clone()))
-            }
-            None => Ok(None),
-        }
-    }
-
-    async fn delete_todo(&self, id: Uuid) -> Result<bool, TodoError> {
-        let mut todos = self.store.write().await;
-        Ok(todos.remove(&id).is_some())
-    }
-}
 
 pub async fn health_check() -> &'static str {
     "OK"
@@ -517,10 +457,6 @@ pub fn create_app_with_repository<R: TodoRepositoryTrait + 'static>(repository: 
         .with_state(repository)
 }
 
-pub fn create_app() -> Router {
-    let repository = Arc::new(MemoryTodoRepository::new());
-    create_app_with_repository(repository)
-}
 
 pub fn create_app_with_database(pool: DatabasePool) -> Router {
     let repository = Arc::new(DatabaseTodoRepository::new(pool));
