@@ -267,7 +267,7 @@ describe('ResponsiveLayout Component', () => {
       Object.defineProperty(window, 'innerWidth', { value: BREAKPOINTS.mobile });
       render(<ResponsiveLayout />);
       
-      // モバイルメニューを開く
+      // Open mobile menu
       const hamburgerButton = screen.getByTestId('mobile-menu-button');
       fireEvent.click(hamburgerButton);
       
@@ -304,7 +304,7 @@ describe('ResponsiveLayout Component', () => {
       const mobileButton = screen.getByTestId('mobile-menu-button');
       expect(mobileButton).toHaveAttribute('aria-label', 'Open navigation menu');
       
-      // モバイルメニューを開いてからテスト
+      // Open mobile menu before testing
       fireEvent.click(mobileButton);
       
       const mobileMenu = screen.getByTestId('mobile-menu');
@@ -316,7 +316,7 @@ describe('ResponsiveLayout Component', () => {
       
       const navigationItems = screen.getAllByRole('link');
       expect(navigationItems.length).toBeGreaterThan(0);
-      // リンクはデフォルトでキーボードナビゲーション可能
+      // Links are keyboard navigable by default
       navigationItems.forEach(link => {
         expect(link).toBeInTheDocument();
       });

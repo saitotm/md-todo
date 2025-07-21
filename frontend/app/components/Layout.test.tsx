@@ -2,12 +2,12 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Layout } from './Layout';
 
-// Mockコンポーネント用のprops
+// Props for mock component
 const mockChildren = <div data-testid="test-children">Test Children</div>;
 
 describe('Layout Component', () => {
   beforeEach(() => {
-    // Viewportサイズをリセット
+    // Reset viewport size
     Object.defineProperty(window, 'innerWidth', {
       writable: true,
       configurable: true,
@@ -19,7 +19,7 @@ describe('Layout Component', () => {
       value: 768,
     });
     
-    // ローカルストレージをモック
+    // Mock localStorage
     const localStorageMock = {
       getItem: vi.fn(),
       setItem: vi.fn(),
@@ -89,7 +89,7 @@ describe('Layout Component', () => {
 
   describe('Responsive Design', () => {
     it('shows mobile menu button on small screens', () => {
-      // モバイルサイズをシミュレート
+      // Simulate mobile size
       Object.defineProperty(window, 'innerWidth', {
         writable: true,
         configurable: true,
@@ -103,7 +103,7 @@ describe('Layout Component', () => {
     });
 
     it('hides mobile menu button on large screens', () => {
-      // デスクトップサイズをシミュレート
+      // Simulate desktop size
       Object.defineProperty(window, 'innerWidth', {
         writable: true,
         configurable: true,
@@ -117,7 +117,7 @@ describe('Layout Component', () => {
     });
 
     it('toggles mobile menu visibility when button is clicked', () => {
-      // モバイルサイズをシミュレート
+      // Simulate mobile size
       Object.defineProperty(window, 'innerWidth', {
         writable: true,
         configurable: true,
@@ -129,14 +129,14 @@ describe('Layout Component', () => {
       const mobileMenuButton = screen.getByTestId('mobile-menu-button');
       const mobileMenu = screen.getByTestId('mobile-menu');
       
-      // 初期状態では非表示
+      // Initially hidden
       expect(mobileMenu).toHaveClass('hidden');
       
-      // ボタンクリックで表示
+      // Show on button click
       fireEvent.click(mobileMenuButton);
       expect(mobileMenu).not.toHaveClass('hidden');
       
-      // 再度クリックで非表示
+      // Hide on second click
       fireEvent.click(mobileMenuButton);
       expect(mobileMenu).toHaveClass('hidden');
     });
@@ -168,14 +168,14 @@ describe('Layout Component', () => {
       
       const themeToggle = screen.getByRole('button', { name: /toggle dark mode/i });
       
-      // 初期状態はライトモード
+      // Initially light mode
       expect(document.documentElement).not.toHaveClass('dark');
       
-      // ダークモードに切り替え
+      // Switch to dark mode
       fireEvent.click(themeToggle);
       expect(document.documentElement).toHaveClass('dark');
       
-      // ライトモードに戻す
+      // Switch back to light mode
       fireEvent.click(themeToggle);
       expect(document.documentElement).not.toHaveClass('dark');
     });
@@ -186,21 +186,21 @@ describe('Layout Component', () => {
       const themeToggle = screen.getByRole('button', { name: /toggle dark mode/i });
       fireEvent.click(themeToggle);
       
-      // ダークテーマが適用されることを確認
+      // Confirm dark theme is applied
       expect(document.documentElement).toHaveClass('dark');
     });
 
     it('loads theme preference from localStorage on mount', () => {
-      // localStorage にダークテーマを保存
+      // Save dark theme to localStorage
       const originalGetItem = window.localStorage.getItem;
       window.localStorage.getItem = vi.fn((key) => key === 'theme' ? 'dark' : null);
       
       render(<Layout>{mockChildren}</Layout>);
       
-      // ダークテーマが適用されることを確認
+      // Confirm dark theme is applied
       expect(document.documentElement).toHaveClass('dark');
       
-      // 元の関数を復元
+      // Restore original function
       window.localStorage.getItem = originalGetItem;
     });
   });
@@ -217,7 +217,7 @@ describe('Layout Component', () => {
     it('provides proper heading hierarchy', () => {
       render(<Layout>{mockChildren}</Layout>);
       
-      // h1がアプリケーションタイトルに使用されている
+      // h1 is used for application title
       expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
       expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('MD-Todo');
     });
@@ -277,7 +277,7 @@ describe('Layout Component', () => {
     it('uses semantic HTML elements for better performance', () => {
       render(<Layout>{mockChildren}</Layout>);
       
-      // header, main, footer, navなどのセマンティック要素が使用されている
+      // Semantic elements like header, main, footer, nav are used
       expect(screen.getByRole('banner').tagName).toBe('HEADER');
       expect(screen.getByRole('main').tagName).toBe('MAIN');
       expect(screen.getByRole('contentinfo').tagName).toBe('FOOTER');
@@ -287,7 +287,7 @@ describe('Layout Component', () => {
     it('provides proper meta tags for SEO', () => {
       render(<Layout>{mockChildren}</Layout>);
       
-      // メインコンテンツにid属性が設定されている（スキップリンク用）
+      // Main content has id attribute set (for skip link)
       const mainContent = screen.getByRole('main');
       expect(mainContent).toHaveAttribute('id', 'main-content');
     });

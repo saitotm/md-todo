@@ -16,7 +16,7 @@ describe('Root Layout Component', () => {
       
       render(<RemixStub />);
       
-      // Layout コンポーネントが正常にレンダリングされることを確認
+      // Confirm Layout component renders correctly
       expect(screen.getByTestId('test-content')).toBeInTheDocument();
     });
 
@@ -30,7 +30,7 @@ describe('Root Layout Component', () => {
       
       render(<RemixStub />);
       
-      // Layout コンポーネントが正常にレンダリングされることを確認
+      // Confirm Layout component renders correctly
       expect(screen.getByTestId('test-content')).toBeInTheDocument();
     });
 
@@ -44,7 +44,7 @@ describe('Root Layout Component', () => {
       
       render(<RemixStub />);
       
-      // Layout コンポーネントが正常にレンダリングされることを確認
+      // Confirm Layout component renders correctly
       expect(screen.getByTestId('test-content')).toBeInTheDocument();
     });
   });
@@ -60,7 +60,7 @@ describe('Root Layout Component', () => {
 
       render(<RemixStub />);
       
-      // アプリケーションのヘッダータイトルが表示されることを確認
+      // Confirm application header title is displayed
       expect(screen.getByRole('banner')).toBeInTheDocument();
       expect(screen.getByText('MD-Todo')).toBeInTheDocument();
     });
@@ -75,7 +75,7 @@ describe('Root Layout Component', () => {
 
       render(<RemixStub />);
       
-      // ナビゲーションメニューが表示されることを確認
+      // Confirm navigation menu is displayed
       expect(screen.getByRole('navigation')).toBeInTheDocument();
     });
 
@@ -89,7 +89,7 @@ describe('Root Layout Component', () => {
 
       render(<RemixStub />);
       
-      // ロゴ画像が適切なalt属性とともに表示されることを確認
+      // Confirm logo image displays with proper alt attribute
       expect(screen.getByAltText('MD-Todo Logo')).toBeInTheDocument();
     });
   });
@@ -105,7 +105,7 @@ describe('Root Layout Component', () => {
 
       render(<RemixStub />);
       
-      // メインコンテンツエリアがmainタグで表示されることを確認
+      // Confirm main content area is displayed with main tag
       expect(screen.getByRole('main')).toBeInTheDocument();
     });
 
@@ -119,7 +119,7 @@ describe('Root Layout Component', () => {
 
       render(<RemixStub />);
       
-      // メインエリアが存在し、outlet内容を含むことを確認
+      // Confirm main area exists and contains outlet content
       const mainElement = screen.getByRole('main');
       expect(mainElement).toBeInTheDocument();
     });
@@ -136,7 +136,7 @@ describe('Root Layout Component', () => {
 
       render(<RemixStub />);
       
-      // フッターが表示されることを確認
+      // Confirm footer is displayed
       expect(screen.getByRole('contentinfo')).toBeInTheDocument();
     });
 
@@ -150,14 +150,14 @@ describe('Root Layout Component', () => {
 
       render(<RemixStub />);
       
-      // コピーライト情報がフッターに表示されることを確認
+      // Confirm copyright information is displayed in footer
       expect(screen.getByText(/© 2025 MD-Todo/)).toBeInTheDocument();
     });
   });
 
   describe('Responsive Design', () => {
     beforeEach(() => {
-      // レスポンシブテスト用のviewport設定をリセット
+      // Reset viewport settings for responsive tests
       Object.defineProperty(window, 'innerWidth', {
         writable: true,
         configurable: true,
@@ -180,13 +180,13 @@ describe('Root Layout Component', () => {
 
       render(<RemixStub />);
       
-      // レスポンシブコンテナクラスが適用されることを確認
+      // Confirm responsive container classes are applied
       const container = screen.getByTestId('app-container');
       expect(container).toHaveClass('container', 'mx-auto', 'px-4');
     });
 
     it('renders mobile-friendly navigation on small screens', () => {
-      // モバイルサイズのviewportをシミュレート
+      // Simulate mobile size viewport
       Object.defineProperty(window, 'innerWidth', {
         writable: true,
         configurable: true,
@@ -202,12 +202,12 @@ describe('Root Layout Component', () => {
 
       render(<RemixStub />);
       
-      // モバイル用ナビゲーションが表示されることを確認
+      // Confirm mobile navigation is displayed
       expect(screen.getByTestId('mobile-menu-button')).toBeInTheDocument();
     });
 
     it('hides mobile menu button on desktop screens', () => {
-      // デスクトップサイズのviewportをシミュレート
+      // Simulate desktop size viewport
       Object.defineProperty(window, 'innerWidth', {
         writable: true,
         configurable: true,
@@ -223,7 +223,7 @@ describe('Root Layout Component', () => {
 
       render(<RemixStub />);
       
-      // デスクトップではモバイルメニューボタンにhiddenクラスが適用されることを確認
+      // Confirm mobile menu button has hidden class applied on desktop
       const mobileButton = screen.getByTestId('mobile-menu-button');
       expect(mobileButton).toHaveClass('md:hidden');
     });
@@ -238,7 +238,7 @@ describe('Root Layout Component', () => {
 
       render(<RemixStub />);
       
-      // レスポンシブグリッドクラスが適用されることを確認
+      // Confirm responsive grid classes are applied
       const gridContainer = screen.getByTestId('layout-grid');
       expect(gridContainer).toHaveClass('grid', 'grid-cols-1', 'lg:grid-cols-12');
     });
@@ -255,7 +255,7 @@ describe('Root Layout Component', () => {
 
       render(<RemixStub />);
       
-      // メインコンテンツへのスキップリンクが存在することを確認
+      // Confirm skip link to main content exists
       expect(screen.getByText('Skip to main content')).toBeInTheDocument();
     });
 
@@ -269,7 +269,7 @@ describe('Root Layout Component', () => {
 
       render(<RemixStub />);
       
-      // h1タグが存在することを確認（SEOとアクセシビリティのため）
+      // Confirm h1 tag exists (for SEO and accessibility)
       expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
     });
 
@@ -283,7 +283,7 @@ describe('Root Layout Component', () => {
 
       render(<RemixStub />);
       
-      // ナビゲーションに適切なaria-labelが設定されることを確認
+      // Confirm navigation has appropriate aria-label
       const navigation = screen.getByRole('navigation');
       expect(navigation).toHaveAttribute('aria-label', 'Main navigation');
     });
@@ -300,7 +300,7 @@ describe('Root Layout Component', () => {
 
       render(<RemixStub />);
       
-      // ダークモード切り替えボタンが存在することを確認
+      // Confirm dark mode toggle button exists
       expect(screen.getByRole('button', { name: /toggle dark mode/i })).toBeInTheDocument();
     });
 
@@ -314,7 +314,7 @@ describe('Root Layout Component', () => {
 
       render(<RemixStub />);
       
-      // Layout コンポーネントが正常にレンダリングされることを確認
+      // Confirm Layout component renders correctly
       expect(screen.getByRole('button', { name: /toggle dark mode/i })).toBeInTheDocument();
     });
   });
