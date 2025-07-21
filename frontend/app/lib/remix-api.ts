@@ -1,4 +1,3 @@
-import { json } from '@remix-run/node';
 import type { ActionFunctionArgs } from '@remix-run/node';
 import { getTodos, createTodo, updateTodo, deleteTodo, ApiError } from './api-client';
 import { validateCreateData, validateUpdateData } from './types';
@@ -6,12 +5,12 @@ import { validateCreateData, validateUpdateData } from './types';
 export async function getTodosLoader() {
   try {
     const todos = await getTodos();
-    return json({ todos });
+    return { todos };
   } catch (error) {
     console.error('Error loading todos:', error);
     
     if (error instanceof ApiError) {
-      return json(
+      return Response.json(
         { 
           todos: [], 
           error: 'Failed to load todos. Please try again.' 
@@ -20,7 +19,7 @@ export async function getTodosLoader() {
       );
     }
     
-    return json(
+    return Response.json(
       { 
         todos: [], 
         error: 'Failed to load todos. Please check your connection.' 
@@ -48,7 +47,7 @@ export async function createTodoAction({ request }: ActionFunctionArgs) {
         }
       });
       
-      return json(
+      return Response.json(
         { 
           success: false, 
           errors 
@@ -59,17 +58,17 @@ export async function createTodoAction({ request }: ActionFunctionArgs) {
 
     const newTodo = await createTodo({ title, content });
     
-    return json({
+    return {
       success: true,
       todo: newTodo,
       message: 'Todo created successfully!'
-    });
+    };
   } catch (error) {
     console.error('Error creating todo:', error);
     
     if (error instanceof ApiError) {
       if (error.status === 400) {
-        return json(
+        return Response.json(
           { 
             success: false, 
             error: error.message 
@@ -78,7 +77,7 @@ export async function createTodoAction({ request }: ActionFunctionArgs) {
         );
       }
       
-      return json(
+      return Response.json(
         { 
           success: false, 
           error: 'Failed to create todo. Please try again.' 
@@ -87,7 +86,7 @@ export async function createTodoAction({ request }: ActionFunctionArgs) {
       );
     }
     
-    return json(
+    return Response.json(
       { 
         success: false, 
         error: 'Failed to create todo. Please check your connection.' 
@@ -101,7 +100,7 @@ export async function updateTodoAction({ request, params }: ActionFunctionArgs) 
   try {
     const { id } = params;
     if (!id) {
-      return json(
+      return Response.json(
         { 
           success: false, 
           error: 'Todo ID is required' 
@@ -142,7 +141,7 @@ export async function updateTodoAction({ request, params }: ActionFunctionArgs) 
         }
       });
       
-      return json(
+      return Response.json(
         { 
           success: false, 
           errors 
@@ -153,16 +152,16 @@ export async function updateTodoAction({ request, params }: ActionFunctionArgs) 
 
     const updatedTodo = await updateTodo(id, updateData);
     
-    return json({
+    return {
       success: true,
       todo: updatedTodo,
       ...(action !== 'toggle' && { message: 'Todo updated successfully!' })
-    });
+    };
   } catch (error) {
     console.error('Error updating todo:', error);
     
     if (error instanceof ApiError) {
-      return json(
+      return Response.json(
         { 
           success: false, 
           error: error.message 
@@ -171,7 +170,7 @@ export async function updateTodoAction({ request, params }: ActionFunctionArgs) 
       );
     }
     
-    return json(
+    return Response.json(
       { 
         success: false, 
         error: 'Failed to update todo. Please try again.' 
@@ -185,7 +184,7 @@ export async function deleteTodoAction({ params }: ActionFunctionArgs) {
   try {
     const { id } = params;
     if (!id) {
-      return json(
+      return Response.json(
         { 
           success: false, 
           error: 'Todo ID is required' 
@@ -196,16 +195,16 @@ export async function deleteTodoAction({ params }: ActionFunctionArgs) {
 
     await deleteTodo(id);
     
-    return json({
+    return {
       success: true,
       message: 'Todo deleted successfully!'
-    });
+    };
   } catch (error) {
     console.error('Error deleting todo:', error);
     
     if (error instanceof ApiError) {
       if (error.status === 500) {
-        return json(
+        return Response.json(
           { 
             success: false, 
             error: 'Failed to delete todo. Please try again.' 
@@ -214,7 +213,7 @@ export async function deleteTodoAction({ params }: ActionFunctionArgs) {
         );
       }
       
-      return json(
+      return Response.json(
         { 
           success: false, 
           error: error.message 
@@ -223,7 +222,7 @@ export async function deleteTodoAction({ params }: ActionFunctionArgs) {
       );
     }
     
-    return json(
+    return Response.json(
       { 
         success: false, 
         error: 'Failed to delete todo. Please try again.' 

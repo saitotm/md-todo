@@ -41,11 +41,10 @@ describe("Remix API Integration", () => {
 
       vi.mocked(apiClient.getTodos).mockResolvedValue(mockTodos);
 
-      const request = new Request("http://localhost:3000/");
-      const result = await getTodosLoader({ request, params: {}, context: {} });
+      const result = await getTodosLoader();
 
-      const responseData = await result.json();
-      expect(responseData).toEqual({ todos: mockTodos });
+      // Success case: plain object returned
+      expect(result).toEqual({ todos: mockTodos });
       expect(apiClient.getTodos).toHaveBeenCalledTimes(1);
     });
 
@@ -53,11 +52,12 @@ describe("Remix API Integration", () => {
       const apiError = new apiClient.ApiError("Failed to fetch todos", 500);
       vi.mocked(apiClient.getTodos).mockRejectedValue(apiError);
 
-      const request = new Request("http://localhost:3000/");
-      const result = await getTodosLoader({ request, params: {}, context: {} });
+      const result = await getTodosLoader();
 
-      const responseData = await result.json();
-      expect(result.status).toBe(500);
+      // Error case: Response object returned
+      const response = result as Response;
+      const responseData = await response.json();
+      expect(response.status).toBe(500);
       expect(responseData).toEqual({
         todos: [],
         error: "Failed to load todos. Please try again.",
@@ -69,11 +69,12 @@ describe("Remix API Integration", () => {
       const networkError = new Error("Network error");
       vi.mocked(apiClient.getTodos).mockRejectedValue(networkError);
 
-      const request = new Request("http://localhost:3000/");
-      const result = await getTodosLoader({ request, params: {}, context: {} });
+      const result = await getTodosLoader();
 
-      const responseData = await result.json();
-      expect(result.status).toBe(500);
+      // Error case: Response object returned
+      const response = result as Response;
+      const responseData = await response.json();
+      expect(response.status).toBe(500);
       expect(responseData).toEqual({
         todos: [],
         error: "Failed to load todos. Please check your connection.",
@@ -111,8 +112,8 @@ describe("Remix API Integration", () => {
         context: {},
       });
 
-      const responseData = await result.json();
-      expect(responseData).toEqual({
+      // Success case: plain object returned
+      expect(result).toEqual({
         success: true,
         todo: newTodo,
         message: "Todo created successfully!",
@@ -140,8 +141,10 @@ describe("Remix API Integration", () => {
         context: {},
       });
 
-      const responseData = await result.json();
-      expect(result.status).toBe(400);
+      // Error case: Response object returned
+      const response = result as Response;
+      const responseData = await response.json();
+      expect(response.status).toBe(400);
       expect(responseData).toEqual({
         success: false,
         errors: { title: "Title is required" },
@@ -172,8 +175,10 @@ describe("Remix API Integration", () => {
         context: {},
       });
 
-      const responseData = await result.json();
-      expect(result.status).toBe(400);
+      // Error case: Response object returned
+      const response = result as Response;
+      const responseData = await response.json();
+      expect(response.status).toBe(400);
       expect(responseData).toEqual({
         success: false,
         error: "Title must be between 1 and 255 characters",
@@ -200,8 +205,10 @@ describe("Remix API Integration", () => {
         context: {},
       });
 
-      const responseData = await result.json();
-      expect(result.status).toBe(500);
+      // Error case: Response object returned
+      const response = result as Response;
+      const responseData = await response.json();
+      expect(response.status).toBe(500);
       expect(responseData).toEqual({
         success: false,
         error: "Failed to create todo. Please try again.",
@@ -241,8 +248,8 @@ describe("Remix API Integration", () => {
         context: {},
       });
 
-      const responseData = await result.json();
-      expect(responseData).toEqual({
+      // Success case: plain object returned
+      expect(result).toEqual({
         success: true,
         todo: updatedTodo,
         message: "Todo updated successfully!",
@@ -273,8 +280,10 @@ describe("Remix API Integration", () => {
         context: {},
       });
 
-      const responseData = await result.json();
-      expect(result.status).toBe(404);
+      // Error case: Response object returned
+      const response = result as Response;
+      const responseData = await response.json();
+      expect(response.status).toBe(404);
       expect(responseData).toEqual({
         success: false,
         error: "Todo not found",
@@ -308,8 +317,8 @@ describe("Remix API Integration", () => {
         context: {},
       });
 
-      const responseData = await result.json();
-      expect(responseData).toEqual({
+      // Success case: plain object returned
+      expect(result).toEqual({
         success: true,
         todo: toggledTodo,
       });
@@ -325,22 +334,14 @@ describe("Remix API Integration", () => {
     it("should delete todo successfully", async () => {
       vi.mocked(apiClient.deleteTodo).mockResolvedValue(undefined);
 
-      const formData = new FormData();
-      formData.append("_action", "delete");
-
-      const request = new Request("http://localhost:3000/", {
-        method: "POST",
-        body: formData,
-      });
-
       const result = await deleteTodoAction({
-        request,
+        request: new Request("http://localhost:3000/"),
         params: { id: todoId },
         context: {},
       });
 
-      const responseData = await result.json();
-      expect(responseData).toEqual({
+      // Success case: plain object returned
+      expect(result).toEqual({
         success: true,
         message: "Todo deleted successfully!",
       });
@@ -351,22 +352,16 @@ describe("Remix API Integration", () => {
       const notFoundError = new apiClient.ApiError("Todo not found", 404);
       vi.mocked(apiClient.deleteTodo).mockRejectedValue(notFoundError);
 
-      const formData = new FormData();
-      formData.append("_action", "delete");
-
-      const request = new Request("http://localhost:3000/", {
-        method: "POST",
-        body: formData,
-      });
-
       const result = await deleteTodoAction({
-        request,
+        request: new Request("http://localhost:3000/"),
         params: { id: "nonexistent-id" },
         context: {},
       });
 
-      const responseData = await result.json();
-      expect(result.status).toBe(404);
+      // Error case: Response object returned
+      const response = result as Response;
+      const responseData = await response.json();
+      expect(response.status).toBe(404);
       expect(responseData).toEqual({
         success: false,
         error: "Todo not found",
@@ -377,22 +372,16 @@ describe("Remix API Integration", () => {
       const serverError = new apiClient.ApiError("Internal server error", 500);
       vi.mocked(apiClient.deleteTodo).mockRejectedValue(serverError);
 
-      const formData = new FormData();
-      formData.append("_action", "delete");
-
-      const request = new Request("http://localhost:3000/", {
-        method: "POST",
-        body: formData,
-      });
-
       const result = await deleteTodoAction({
-        request,
+        request: new Request("http://localhost:3000/"),
         params: { id: todoId },
         context: {},
       });
 
-      const responseData = await result.json();
-      expect(result.status).toBe(500);
+      // Error case: Response object returned
+      const response = result as Response;
+      const responseData = await response.json();
+      expect(response.status).toBe(500);
       expect(responseData).toEqual({
         success: false,
         error: "Failed to delete todo. Please try again.",
