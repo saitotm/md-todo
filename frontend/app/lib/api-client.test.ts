@@ -71,7 +71,7 @@ describe('API Client', () => {
     });
 
     it('should throw ApiError when API returns error response', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValue({
         ok: false,
         status: 500,
         json: async () => ({
@@ -86,7 +86,7 @@ describe('API Client', () => {
     });
 
     it('should handle network errors', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+      mockFetch.mockRejectedValue(new Error('Network error'));
 
       await expect(getTodos()).rejects.toThrow(ApiError);
       await expect(getTodos()).rejects.toThrow('Network error occurred while fetching todos');
@@ -132,7 +132,7 @@ describe('API Client', () => {
     });
 
     it('should handle validation errors', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValue({
         ok: false,
         status: 400,
         json: async () => ({
@@ -187,7 +187,7 @@ describe('API Client', () => {
     });
 
     it('should handle todo not found error', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValue({
         ok: false,
         status: 404,
         json: async () => ({
@@ -227,7 +227,7 @@ describe('API Client', () => {
     });
 
     it('should handle todo not found error on delete', async () => {
-      mockFetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValue({
         ok: false,
         status: 404,
         json: async () => ({
