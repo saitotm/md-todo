@@ -1,9 +1,9 @@
 import { json } from '@remix-run/node';
-import type { LoaderFunctionArgs, ActionFunctionArgs } from '@remix-run/node';
+import type { ActionFunctionArgs } from '@remix-run/node';
 import { getTodos, createTodo, updateTodo, deleteTodo, ApiError } from './api-client';
 import { validateCreateData, validateUpdateData } from './types';
 
-export async function getTodosLoader({ request }: LoaderFunctionArgs) {
+export async function getTodosLoader() {
   try {
     const todos = await getTodos();
     return json({ todos });
@@ -113,7 +113,7 @@ export async function updateTodoAction({ request, params }: ActionFunctionArgs) 
     const formData = await request.formData();
     const action = formData.get('_action') as string;
     
-    let updateData: any = {};
+    let updateData: Record<string, unknown> = {};
     
     if (action === 'toggle') {
       // Only update completion status
@@ -181,7 +181,7 @@ export async function updateTodoAction({ request, params }: ActionFunctionArgs) 
   }
 }
 
-export async function deleteTodoAction({ request, params }: ActionFunctionArgs) {
+export async function deleteTodoAction({ params }: ActionFunctionArgs) {
   try {
     const { id } = params;
     if (!id) {

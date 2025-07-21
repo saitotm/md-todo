@@ -35,7 +35,7 @@ const UUID_V7_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[
 // ISO 8601 date validation regex
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
 
-export function validateTodo(todo: any): ValidationResult {
+export function validateTodo(todo: unknown): ValidationResult {
   const errors: string[] = [];
 
   // Required fields validation
@@ -81,7 +81,7 @@ export function validateTodo(todo: any): ValidationResult {
   };
 }
 
-export function validateCreateData(data: any): ValidationResult {
+export function validateCreateData(data: unknown): ValidationResult {
   const errors: string[] = [];
 
   if (!data.title || typeof data.title !== 'string') {
@@ -104,7 +104,7 @@ export function validateCreateData(data: any): ValidationResult {
   };
 }
 
-export function validateUpdateData(data: any): ValidationResult {
+export function validateUpdateData(data: unknown): ValidationResult {
   const errors: string[] = [];
 
   // For updates, fields are optional, but if provided they must be valid
