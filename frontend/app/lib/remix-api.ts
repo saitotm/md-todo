@@ -204,6 +204,16 @@ export async function deleteTodoAction({ request, params }: ActionFunctionArgs) 
     console.error('Error deleting todo:', error);
     
     if (error instanceof ApiError) {
+      if (error.status === 500) {
+        return json(
+          { 
+            success: false, 
+            error: 'Failed to delete todo. Please try again.' 
+          },
+          { status: 500 }
+        );
+      }
+      
       return json(
         { 
           success: false, 

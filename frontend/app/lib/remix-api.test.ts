@@ -41,7 +41,8 @@ describe('Remix API Integration', () => {
       const request = new Request('http://localhost:3000/');
       const result = await getTodosLoader({ request, params: {}, context: {} });
 
-      expect(result).toEqual(json({ todos: mockTodos }));
+      const responseData = await result.json();
+      expect(responseData).toEqual({ todos: mockTodos });
       expect(apiClient.getTodos).toHaveBeenCalledTimes(1);
     });
 
@@ -52,10 +53,12 @@ describe('Remix API Integration', () => {
       const request = new Request('http://localhost:3000/');
       const result = await getTodosLoader({ request, params: {}, context: {} });
 
-      expect(result).toEqual(json({ 
+      const responseData = await result.json();
+      expect(result.status).toBe(500);
+      expect(responseData).toEqual({ 
         todos: [], 
         error: 'Failed to load todos. Please try again.' 
-      }, { status: 500 }));
+      });
       expect(apiClient.getTodos).toHaveBeenCalledTimes(1);
     });
 
@@ -66,10 +69,12 @@ describe('Remix API Integration', () => {
       const request = new Request('http://localhost:3000/');
       const result = await getTodosLoader({ request, params: {}, context: {} });
 
-      expect(result).toEqual(json({ 
+      const responseData = await result.json();
+      expect(result.status).toBe(500);
+      expect(responseData).toEqual({ 
         todos: [], 
         error: 'Failed to load todos. Please check your connection.' 
-      }, { status: 500 }));
+      });
       expect(apiClient.getTodos).toHaveBeenCalledTimes(1);
     });
   });
@@ -99,11 +104,12 @@ describe('Remix API Integration', () => {
 
       const result = await createTodoAction({ request, params: {}, context: {} });
 
-      expect(result).toEqual(json({ 
+      const responseData = await result.json();
+      expect(responseData).toEqual({ 
         success: true, 
         todo: newTodo,
         message: 'Todo created successfully!'
-      }));
+      });
       expect(apiClient.createTodo).toHaveBeenCalledWith({
         title: 'New Todo',
         content: '# New Content'
@@ -123,10 +129,12 @@ describe('Remix API Integration', () => {
 
       const result = await createTodoAction({ request, params: {}, context: {} });
 
-      expect(result).toEqual(json({ 
+      const responseData = await result.json();
+      expect(result.status).toBe(400);
+      expect(responseData).toEqual({ 
         success: false,
         errors: { title: 'Title is required' }
-      }, { status: 400 }));
+      });
       expect(apiClient.createTodo).not.toHaveBeenCalled();
     });
 
@@ -146,10 +154,12 @@ describe('Remix API Integration', () => {
 
       const result = await createTodoAction({ request, params: {}, context: {} });
 
-      expect(result).toEqual(json({ 
+      const responseData = await result.json();
+      expect(result.status).toBe(400);
+      expect(responseData).toEqual({ 
         success: false,
         error: 'Title must be between 1 and 255 characters'
-      }, { status: 400 }));
+      });
     });
 
     it('should handle server errors during creation', async () => {
@@ -168,10 +178,12 @@ describe('Remix API Integration', () => {
 
       const result = await createTodoAction({ request, params: {}, context: {} });
 
-      expect(result).toEqual(json({ 
+      const responseData = await result.json();
+      expect(result.status).toBe(500);
+      expect(responseData).toEqual({ 
         success: false,
         error: 'Failed to create todo. Please try again.'
-      }, { status: 500 }));
+      });
     });
   });
 
@@ -203,11 +215,12 @@ describe('Remix API Integration', () => {
 
       const result = await updateTodoAction({ request, params: { id: todoId }, context: {} });
 
-      expect(result).toEqual(json({ 
+      const responseData = await result.json();
+      expect(responseData).toEqual({ 
         success: true, 
         todo: updatedTodo,
         message: 'Todo updated successfully!'
-      }));
+      });
       expect(apiClient.updateTodo).toHaveBeenCalledWith(todoId, {
         title: 'Updated Todo',
         content: '# Updated Content',
@@ -230,10 +243,12 @@ describe('Remix API Integration', () => {
 
       const result = await updateTodoAction({ request, params: { id: 'nonexistent-id' }, context: {} });
 
-      expect(result).toEqual(json({ 
+      const responseData = await result.json();
+      expect(result.status).toBe(404);
+      expect(responseData).toEqual({ 
         success: false,
         error: 'Todo not found'
-      }, { status: 404 }));
+      });
     });
 
     it('should toggle completion status only', async () => {
@@ -259,10 +274,11 @@ describe('Remix API Integration', () => {
 
       const result = await updateTodoAction({ request, params: { id: todoId }, context: {} });
 
-      expect(result).toEqual(json({ 
+      const responseData = await result.json();
+      expect(responseData).toEqual({ 
         success: true, 
         todo: toggledTodo
-      }));
+      });
       expect(apiClient.updateTodo).toHaveBeenCalledWith(todoId, {
         completed: true
       });
@@ -285,10 +301,11 @@ describe('Remix API Integration', () => {
 
       const result = await deleteTodoAction({ request, params: { id: todoId }, context: {} });
 
-      expect(result).toEqual(json({ 
+      const responseData = await result.json();
+      expect(responseData).toEqual({ 
         success: true,
         message: 'Todo deleted successfully!'
-      }));
+      });
       expect(apiClient.deleteTodo).toHaveBeenCalledWith(todoId);
     });
 
@@ -306,10 +323,12 @@ describe('Remix API Integration', () => {
 
       const result = await deleteTodoAction({ request, params: { id: 'nonexistent-id' }, context: {} });
 
-      expect(result).toEqual(json({ 
+      const responseData = await result.json();
+      expect(result.status).toBe(404);
+      expect(responseData).toEqual({ 
         success: false,
         error: 'Todo not found'
-      }, { status: 404 }));
+      });
     });
 
     it('should handle server errors during deletion', async () => {
@@ -326,10 +345,12 @@ describe('Remix API Integration', () => {
 
       const result = await deleteTodoAction({ request, params: { id: todoId }, context: {} });
 
-      expect(result).toEqual(json({ 
+      const responseData = await result.json();
+      expect(result.status).toBe(500);
+      expect(responseData).toEqual({ 
         success: false,
         error: 'Failed to delete todo. Please try again.'
-      }, { status: 500 }));
+      });
     });
   });
 });
