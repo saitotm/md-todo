@@ -38,40 +38,51 @@ const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
 export function validateTodo(todo: unknown): ValidationResult {
   const errors: string[] = [];
 
+  // Type guard to ensure todo is an object
+  if (typeof todo !== 'object' || todo === null) {
+    errors.push('Todo must be an object');
+    return {
+      isValid: false,
+      errors,
+    };
+  }
+
+  const todoObj = todo as Record<string, unknown>;
+
   // Required fields validation
-  if (!todo.id) {
+  if (!todoObj.id) {
     errors.push('id is required');
-  } else if (!UUID_V7_REGEX.test(todo.id)) {
+  } else if (typeof todoObj.id !== 'string' || !UUID_V7_REGEX.test(todoObj.id)) {
     errors.push('Invalid UUID format');
   }
 
-  if (!todo.title || typeof todo.title !== 'string') {
+  if (!todoObj.title || typeof todoObj.title !== 'string') {
     errors.push('Title is required');
-  } else if (todo.title.trim().length === 0) {
+  } else if (todoObj.title.trim().length === 0) {
     errors.push('Title is required');
-  } else if (todo.title.length > 255) {
+  } else if (todoObj.title.length > 255) {
     errors.push('Title must be 255 characters or less');
   }
 
-  if (todo.content === undefined || todo.content === null || typeof todo.content !== 'string') {
+  if (todoObj.content === undefined || todoObj.content === null || typeof todoObj.content !== 'string') {
     errors.push('Content is required');
-  } else if (todo.content.length > 10000) {
+  } else if (todoObj.content.length > 10000) {
     errors.push('Content must be 10000 characters or less');
   }
 
-  if (typeof todo.completed !== 'boolean') {
+  if (typeof todoObj.completed !== 'boolean') {
     errors.push('completed must be a boolean');
   }
 
-  if (!todo.created_at) {
+  if (!todoObj.created_at) {
     errors.push('created_at is required');
-  } else if (!ISO_DATE_REGEX.test(todo.created_at)) {
+  } else if (typeof todoObj.created_at !== 'string' || !ISO_DATE_REGEX.test(todoObj.created_at)) {
     errors.push('created_at must be a valid ISO date');
   }
 
-  if (!todo.updated_at) {
+  if (!todoObj.updated_at) {
     errors.push('updated_at is required');
-  } else if (!ISO_DATE_REGEX.test(todo.updated_at)) {
+  } else if (typeof todoObj.updated_at !== 'string' || !ISO_DATE_REGEX.test(todoObj.updated_at)) {
     errors.push('updated_at must be a valid ISO date');
   }
 
@@ -84,17 +95,28 @@ export function validateTodo(todo: unknown): ValidationResult {
 export function validateCreateData(data: unknown): ValidationResult {
   const errors: string[] = [];
 
-  if (!data.title || typeof data.title !== 'string') {
+  // Type guard to ensure data is an object
+  if (typeof data !== 'object' || data === null) {
+    errors.push('Data must be an object');
+    return {
+      isValid: false,
+      errors,
+    };
+  }
+
+  const dataObj = data as Record<string, unknown>;
+
+  if (!dataObj.title || typeof dataObj.title !== 'string') {
     errors.push('Title is required');
-  } else if (data.title.trim().length === 0) {
+  } else if (dataObj.title.trim().length === 0) {
     errors.push('Title is required');
-  } else if (data.title.length > 255) {
+  } else if (dataObj.title.length > 255) {
     errors.push('Title must be 255 characters or less');
   }
 
-  if (data.content === undefined || data.content === null || typeof data.content !== 'string') {
+  if (dataObj.content === undefined || dataObj.content === null || typeof dataObj.content !== 'string') {
     errors.push('Content is required');
-  } else if (data.content.length > 10000) {
+  } else if (dataObj.content.length > 10000) {
     errors.push('Content must be 10000 characters or less');
   }
 
@@ -107,26 +129,37 @@ export function validateCreateData(data: unknown): ValidationResult {
 export function validateUpdateData(data: unknown): ValidationResult {
   const errors: string[] = [];
 
+  // Type guard to ensure data is an object
+  if (typeof data !== 'object' || data === null) {
+    errors.push('Data must be an object');
+    return {
+      isValid: false,
+      errors,
+    };
+  }
+
+  const dataObj = data as Record<string, unknown>;
+
   // For updates, fields are optional, but if provided they must be valid
-  if (data.title !== undefined) {
-    if (typeof data.title !== 'string') {
+  if (dataObj.title !== undefined) {
+    if (typeof dataObj.title !== 'string') {
       errors.push('Title must be a string');
-    } else if (data.title.trim().length === 0) {
+    } else if (dataObj.title.trim().length === 0) {
       errors.push('Title cannot be empty');
-    } else if (data.title.length > 255) {
+    } else if (dataObj.title.length > 255) {
       errors.push('Title must be 255 characters or less');
     }
   }
 
-  if (data.content !== undefined) {
-    if (typeof data.content !== 'string') {
+  if (dataObj.content !== undefined) {
+    if (typeof dataObj.content !== 'string') {
       errors.push('Content must be a string');
-    } else if (data.content.length > 10000) {
+    } else if (dataObj.content.length > 10000) {
       errors.push('Content must be 10000 characters or less');
     }
   }
 
-  if (data.completed !== undefined && typeof data.completed !== 'boolean') {
+  if (dataObj.completed !== undefined && typeof dataObj.completed !== 'boolean') {
     errors.push('completed must be a boolean');
   }
 
