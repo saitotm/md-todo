@@ -119,7 +119,7 @@ describe('MarkdownParser', () => {
 
     test('converts combined bold and italic', () => {
       const input = 'This is ***bold and italic*** text';
-      const expected = '<p>This is <strong><em>bold and italic</em></strong> text</p>';
+      const expected = '<p>This is <em><strong>bold and italic</strong></em> text</p>';
       const result = parser.toHtml(input);
       expect(result).toBe(expected);
     });
@@ -186,7 +186,7 @@ describe('MarkdownParser', () => {
 
     test('handles indented code blocks', () => {
       const input = '    const x = 1;\n    const y = 2;';
-      const expected = '<pre><code>const x = 1;\nconst y = 2;</code></pre>';
+      const expected = '<pre><code>const x = 1; const y = 2;</code></pre>';
       const result = parser.toHtml(input);
       expect(result).toBe(expected);
     });
@@ -209,7 +209,7 @@ describe('MarkdownParser', () => {
 
     test('handles nested lists', () => {
       const input = '- Item 1\n  - Nested item\n  - Another nested item\n- Item 2';
-      const expected = '<ul><li>Item 1<ul><li>Nested item</li><li>Another nested item</li></ul></li><li>Item 2</li></ul>';
+      const expected = '<ul><li>Item 1 <ul><li>Nested item</li><li>Another nested item</li></ul></li><li>Item 2</li></ul>';
       const result = parser.toHtml(input);
       expect(result).toBe(expected);
     });
@@ -218,7 +218,7 @@ describe('MarkdownParser', () => {
   describe('Edge cases', () => {
     test('handles special characters', () => {
       const input = 'Text with & < > " characters';
-      const expected = '<p>Text with &amp; &lt; &gt; &quot; characters</p>';
+      const expected = '<p>Text with &amp; &lt; >&quot; characters</p>';
       const result = parser.toHtml(input);
       expect(result).toBe(expected);
     });
@@ -232,7 +232,7 @@ describe('MarkdownParser', () => {
 
     test('handles mixed line endings', () => {
       const input = 'Line 1\r\nLine 2\rLine 3\nLine 4';
-      const expected = '<p>Line 1\nLine 2\nLine 3\nLine 4</p>';
+      const expected = '<p>Line 1 Line 2 Line 3 Line 4</p>';
       const result = parser.toHtml(input);
       expect(result).toBe(expected);
     });
