@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { Todo } from './todo-class';
 
 // This test file tests the advanced Todo class implementation
-// The implementation doesn't exist yet - this follows TDD approach
 
 describe('Todo Class', () => {
   describe('constructor', () => {
@@ -390,41 +390,3 @@ describe('Todo Class', () => {
   });
 });
 
-// Type declaration for the Todo class that will be implemented
-declare class Todo {
-  id?: string;
-  title: string;
-  content: string;
-  completed: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-
-  constructor(data: Partial<{
-    id?: string;
-    title: string;
-    content: string;
-    completed: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-  }> | undefined | null);
-
-  validate(): boolean;
-  getValidationErrors(): string[];
-  toJSON(): {
-    id?: string;
-    title: string;
-    content: string;
-    completed: boolean;
-  };
-  toCreateData(): {
-    title: string;
-    content: string;
-  };
-  toUpdateData(fields?: string[]): {
-    title?: string;
-    content?: string;
-    completed?: boolean;
-  };
-  clone(): Todo;
-  equals(other: Todo): boolean;
-}
