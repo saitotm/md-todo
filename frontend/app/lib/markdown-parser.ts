@@ -3,6 +3,7 @@ import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkRehype from 'remark-rehype';
 import rehypeStringify from 'rehype-stringify';
+import rehypePrism from 'rehype-prism';
 
 export interface MarkdownOptions {
   allowHtml?: boolean;
@@ -19,6 +20,7 @@ export class MarkdownParser {
       .use(remarkParse)
       .use(remarkGfm)
       .use(remarkRehype, { allowDangerousHtml: false })
+      .use(rehypePrism, { ignoreMissing: true })
       .use(rehypeStringify, { allowDangerousHtml: false });
   }
 
@@ -53,6 +55,7 @@ export class MarkdownParser {
           .use(remarkParse)
           .use(remarkGfm) 
           .use(remarkRehype, { allowDangerousHtml: true })
+          .use(rehypePrism, { ignoreMissing: true })
           .use(rehypeStringify, { allowDangerousHtml: true });
       }
 
