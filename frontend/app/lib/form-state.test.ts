@@ -54,7 +54,7 @@ describe('FormState Class', () => {
 
     it('should trigger validation after value change', () => {
       const validator = vi.fn(() => ({ isValid: true, errors: {} }));
-      const formState = new FormState({}, validator);
+      const formState = new FormState({ title: '' }, validator);
 
       formState.setValue('title', 'New Title');
 
@@ -189,7 +189,7 @@ describe('FormState Class', () => {
         errors: {}
       }));
 
-      const formState = new FormState({}, validator);
+      const formState = new FormState({ title: '' }, validator);
       formState.setError('title', 'Previous error');
 
       const isValid = formState.validate();

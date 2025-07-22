@@ -53,7 +53,12 @@ export class Todo {
     content: string;
     completed: boolean;
   } {
-    const result: any = {
+    const result: {
+      id?: string;
+      title: string;
+      content: string;
+      completed: boolean;
+    } = {
       title: this.title,
       content: this.content,
       completed: this.completed
@@ -81,7 +86,11 @@ export class Todo {
     content?: string;
     completed?: boolean;
   } {
-    const result: any = {};
+    const result: {
+      title?: string;
+      content?: string;
+      completed?: boolean;
+    } = {};
 
     if (!fields || fields.includes('title')) {
       result.title = this.title;

@@ -26,7 +26,7 @@ export class StateError extends Error {
     return this.type === 'network';
   }
 
-  toJSON(): Record<string, any> {
+  toJSON(): Record<string, unknown> {
     return {
       name: this.name,
       message: this.message,

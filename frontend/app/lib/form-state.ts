@@ -1,7 +1,6 @@
-import { ValidationError } from './state-errors';
 import type { Todo, TodoCreateData, TodoUpdateData } from './types';
 
-export class FormState<T = Record<string, any>> {
+export class FormState<T extends Record<string, unknown> = Record<string, unknown>> {
   values: T;
   errors: Record<string, string | null>;
   touched: Record<string, boolean>;
@@ -9,7 +8,7 @@ export class FormState<T = Record<string, any>> {
   isDirty: boolean;
   isValid: boolean;
   
-  private initialValues: T;
+  protected initialValues: T;
   private validator?: (values: T) => { isValid: boolean; errors: Record<string, string> };
 
   constructor(
@@ -30,7 +29,7 @@ export class FormState<T = Record<string, any>> {
     }
   }
 
-  setValue(field: keyof T, value: any): void {
+  setValue(field: keyof T, value: unknown): void {
     this.values = { ...this.values, [field]: value };
     this.touched = { ...this.touched, [field]: true };
     
@@ -101,7 +100,7 @@ export class FormState<T = Record<string, any>> {
     }
   }
 
-  async submit(handler: (values: T) => Promise<any>): Promise<{ 
+  async submit(handler: (values: T) => Promise<unknown>): Promise<{ 
     success: boolean; 
     error?: string; 
     errors?: Record<string, string> 
@@ -121,7 +120,7 @@ export class FormState<T = Record<string, any>> {
     try {
       const result = await handler(this.values);
       this.isSubmitting = false;
-      return { success: true, ...result };
+      return { success: true, ...(typeof result === 'object' && result !== null ? result as Record<string, unknown> : {}) };
     } catch (error) {
       this.isSubmitting = false;
       return {
@@ -132,17 +131,17 @@ export class FormState<T = Record<string, any>> {
   }
 
   getFieldProps(field: keyof T): {
-    value: any;
+    value: unknown;
     error: string | null;
     touched: boolean;
-    onChange: (value: any) => void;
+    onChange: (value: unknown) => void;
     onBlur: () => void;
   } {
     return {
       value: this.values[field],
       error: this.errors[field as string] || null,
       touched: this.touched[field as string] || false,
-      onChange: (value: any) => this.setValue(field, value),
+      onChange: (value: unknown) => this.setValue(field, value),
       onBlur: () => this.setTouched(field, true),
     };
   }
@@ -152,8 +151,8 @@ export class FormState<T = Record<string, any>> {
   }
 
   private isFormDirty(): boolean {
-    const initialKeys = Object.keys(this.initialValues);
-    const currentKeys = Object.keys(this.values);
+    const initialKeys = Object.keys(this.initialValues as Record<string, unknown>);
+    const currentKeys = Object.keys(this.values as Record<string, unknown>);
     
     // Check if different number of keys
     if (initialKeys.length !== currentKeys.length) {
