@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
+import { FormState, TodoFormState } from './form-state';
 
 // This test file tests form state management implementation
-// The implementation doesn't exist yet - this follows TDD approach
 
 describe('FormState Class', () => {
   describe('constructor', () => {
@@ -467,43 +467,3 @@ describe('TodoFormState Class', () => {
   });
 });
 
-// Type declarations for the classes that will be implemented
-declare class FormState<T = Record<string, any>> {
-  values: T;
-  errors: Record<string, string | null>;
-  touched: Record<string, boolean>;
-  isSubmitting: boolean;
-  isDirty: boolean;
-  isValid: boolean;
-
-  constructor(
-    initialValues?: T,
-    validator?: (values: T) => { isValid: boolean; errors: Record<string, string> }
-  );
-
-  setValue(field: keyof T, value: any): void;
-  setValues(values: Partial<T>): void;
-  setError(field: keyof T, error: string | null): void;
-  setErrors(errors: Record<string, string>): void;
-  setTouched(field: keyof T, touched: boolean): void;
-  validate(): boolean;
-  reset(newValues?: T): void;
-  submit(handler: (values: T) => Promise<any>): Promise<{ success: boolean; error?: string; errors?: Record<string, string> }>;
-  getFieldProps(field: keyof T): {
-    value: any;
-    error: string | null;
-    touched: boolean;
-    onChange: (value: any) => void;
-    onBlur: () => void;
-  };
-}
-
-declare class TodoFormState extends FormState<{
-  title: string;
-  content: string;
-}> {
-  constructor(todo?: any);
-  toCreateData(): { title: string; content: string };
-  toUpdateData(): { title?: string; content?: string };
-  loadFromTodo(todo: any): void;
-}

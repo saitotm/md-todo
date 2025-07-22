@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { StateError, ValidationError, NetworkError, ErrorHandler } from './state-errors';
 
 // This test file tests error handling in state management
-// The implementation doesn't exist yet - this follows TDD approach
 
 describe('StateError Class', () => {
   describe('constructor', () => {
@@ -334,63 +334,3 @@ describe('ErrorHandler Class', () => {
   });
 });
 
-// Type declarations for the classes that will be implemented
-declare class StateError extends Error {
-  type: string;
-  field?: string;
-  code?: string;
-
-  constructor(message: string, options?: {
-    type?: string;
-    field?: string;
-    code?: string;
-  });
-
-  isValidationError(): boolean;
-  isNetworkError(): boolean;
-  toJSON(): Record<string, any>;
-}
-
-declare class ValidationError extends StateError {
-  field: string;
-  rule?: string;
-
-  constructor(field: string, message: string, rule?: string);
-
-  static required(field: string): ValidationError;
-  static minLength(field: string, min: number): ValidationError;
-  static maxLength(field: string, max: number): ValidationError;
-  static pattern(field: string, patternName: string): ValidationError;
-}
-
-declare class NetworkError extends StateError {
-  status?: number;
-  url?: string;
-  method?: string;
-
-  constructor(message: string, status?: number, details?: {
-    url?: string;
-    method?: string;
-  });
-
-  static timeout(): NetworkError;
-  static connectionFailed(): NetworkError;
-  static serverError(status: number): NetworkError;
-  static notFound(url?: string): NetworkError;
-
-  isRetryable(): boolean;
-}
-
-declare class ErrorHandler {
-  static handleError(error: Error): {
-    type: string;
-    message: string;
-    field?: string;
-    displayMessage: string;
-    retryable?: boolean;
-  };
-
-  static formatErrorsForForm(errors: Error[]): Record<string, string>;
-  static shouldShowToUser(error: Error): boolean;
-  static getRetryDelay(error: Error, attempt: number): number;
-}

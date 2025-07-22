@@ -13,6 +13,7 @@ MD-Todo は、マークダウン形式でタスクを管理できるモダンな
 - React 18 + Remix
 - TypeScript
 - Tailwind CSS
+- カスタム状態管理システム (FormState, ErrorHandler)
 - Vitest (テスト)
 - Vite (ビルドツール)
 
@@ -219,6 +220,51 @@ cargo check
 ```bash
 # OpenAPI仕様書生成（JSONファイル）
 cargo run --bin generate_openapi
+```
+
+## 状態管理
+
+### フロントエンド状態管理
+
+フロントエンドでは、カスタムの状態管理システムを採用しています：
+
+#### コアクラス
+
+**FormState クラス:**
+- 汎用的なフォーム状態の管理
+- バリデーション、dirty/touched状態の追跡
+- 非同期送信処理のサポート
+
+**TodoFormState クラス:**
+- Todo固有のフォーム状態管理
+- FormStateを継承し、Todo特有のバリデーションを実装
+- 作成・更新データの生成機能
+
+#### エラーハンドリング
+
+**StateError クラス:**
+- アプリケーション全体のエラー基底クラス
+- タイプ別エラー分類（validation, network, etc.）
+
+**ValidationError クラス:**
+- フォームバリデーションエラー専用
+- フィールド固有のエラー情報を保持
+
+**NetworkError クラス:**
+- API通信エラー専用  
+- 再試行可能性の判定機能
+
+**ErrorHandler クラス:**
+- エラー処理のユーティリティ
+- エラーメッセージの整形とユーザー表示制御
+
+#### ファイル構成
+
+```
+app/lib/
+├── state-errors.ts     # エラークラス定義
+├── form-state.ts       # フォーム状態管理
+└── types.ts            # 型定義
 ```
 
 ## データベース
