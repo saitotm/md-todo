@@ -228,7 +228,7 @@
     - テストが失敗することの確認
     - _要件: 2.1, 2.3_
 
-  - [ ] 4.2 Markdown パーサーの統合
+  - [x] 4.2 Markdown パーサーの統合
 
     - remark/rehype ライブラリのセットアップ
     - Markdown から HTML への変換機能

@@ -150,27 +150,36 @@ export class MarkdownParser {
 
   private isMalformedMarkdown(input: string): boolean {
     // Check for unclosed markdown syntax that should be treated as plain text
-    // Only check for truly malformed markdown at the end of the input
-    const malformedPatterns = [
-      /\*\*[^*]*$/,         // Unclosed bold at end
-      /\*(?![*])[^*]*$/,    // Unclosed italic at end (not double *)
-      /\[[^\]]*$/,          // Unclosed link at end
-      /__[^_]*$/,           // Unclosed bold (underscore) at end
-      /(?<!_)_(?!_)[^_]*$/ // Unclosed italic (underscore) at end (not double _)
-    ];
-
-    // Only return true for the specific malformed test cases
-    const testCases = [
-      '**unclosed bold',
-      '*unclosed italic', 
-      '[unclosed link'
-    ];
+    // This detects patterns that are clearly unintentional or broken
     
-    if (testCases.some(testCase => input.includes(testCase))) {
+    const text = input.trim();
+    
+    // Check for obviously unclosed emphasis patterns at the end of the input
+    // These are likely user errors that should be treated as plain text
+    
+    // Unclosed bold at end: **text (without closing **)
+    if (/\*\*[^*]+$/.test(text) && !this.hasMatchingClose(text, '**')) {
       return true;
     }
     
-    return false; // Let the processor handle normal cases
+    // Unclosed italic at end: *text (without closing *)
+    if (/(?<!\*)\*(?!\*)[^*]+$/.test(text) && !this.hasMatchingClose(text, '*')) {
+      return true;
+    }
+    
+    // Unclosed link at end: [text (without closing ])
+    if (/\[[^\]]+$/.test(text) && !text.includes(']')) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  private hasMatchingClose(text: string, marker: string): boolean {
+    // Count occurrences of the marker
+    const regex = new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    const matches = text.match(regex);
+    return matches ? matches.length >= 2 : false;
   }
 
   private escapeHtml(text: string): string {
