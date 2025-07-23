@@ -283,6 +283,222 @@ describe('MarkdownParser', () => {
     });
   });
 
+  describe('XSS Protection Tests (Task 4.5)', () => {
+    describe('Script tag sanitization', () => {
+      test('removes inline script tags', () => {
+        const input = 'Normal text <script>maliciousCode()</script> more text';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('<script>');
+        expect(result).not.toContain('maliciousCode()');
+        expect(result).toContain('Normal text');
+        expect(result).toContain('more text');
+      });
+
+      test('removes script tags with attributes', () => {
+        const input = '<script type="text/javascript" src="malicious.js"></script>';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('<script');
+        expect(result).not.toContain('malicious.js');
+        expect(result).not.toContain('</script>');
+      });
+
+      test('removes multiple script tags', () => {
+        const input = '<script>alert(1)</script>Text<script>alert(2)</script>';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('<script>');
+        expect(result).not.toContain('alert(1)');
+        expect(result).not.toContain('alert(2)');
+        expect(result).toContain('Text');
+      });
+    });
+
+    describe('Event handler sanitization', () => {
+      test('removes onclick event handlers', () => {
+        const input = '<div onclick="alert(\'XSS\')">Click me</div>';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('onclick');
+        expect(result).not.toContain('alert');
+        expect(result).toContain('Click me');
+      });
+
+      test('removes onload event handlers', () => {
+        const input = '<img src="image.jpg" onload="stealData()" alt="test">';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('onload');
+        expect(result).not.toContain('stealData()');
+      });
+
+      test('removes onerror event handlers', () => {
+        const input = '<img src="broken.jpg" onerror="executePayload()">';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('onerror');
+        expect(result).not.toContain('executePayload()');
+      });
+
+      test('removes onmouseover event handlers', () => {
+        const input = '<span onmouseover="trackUser()">Hover me</span>';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('onmouseover');
+        expect(result).not.toContain('trackUser()');
+        expect(result).toContain('Hover me');
+      });
+    });
+
+    describe('JavaScript protocol sanitization', () => {
+      test('removes javascript: protocol from links', () => {
+        const input = '[Click here](javascript:alert("XSS"))';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('javascript:');
+        expect(result).not.toContain('alert("XSS")');
+        expect(result).toContain('Click here');
+      });
+
+      test('removes javascript: protocol from images', () => {
+        const input = '<img src="javascript:maliciousCode()">';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('javascript:');
+        expect(result).not.toContain('maliciousCode()');
+      });
+
+      test('allows legitimate protocols in links', () => {
+        const input = '[HTTPS Link](https://example.com) [HTTP Link](http://example.com) [FTP Link](ftp://example.com)';
+        const result = parser.toHtml(input);
+        expect(result).toContain('https://example.com');
+        expect(result).toContain('http://example.com');
+        expect(result).toContain('ftp://example.com');
+      });
+    });
+
+    describe('Data URI sanitization', () => {
+      test('removes dangerous data URIs with scripts', () => {
+        const input = '<img src="data:text/html,<script>alert(1)</script>">';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('data:text/html');
+        expect(result).not.toContain('<script>alert(1)</script>');
+        expect(result).not.toContain('alert(1)');
+      });
+
+      test('allows safe data URIs for images', () => {
+        const input = '<img src="data:image/png;base64,iVBORw0KGgoAAAANS...">';
+        const result = parser.toHtml(input);
+        // Should allow legitimate image data URIs (implementation dependent)
+        expect(result).not.toContain('<script>');
+      });
+    });
+
+    describe('Style injection sanitization', () => {
+      test('removes dangerous style attributes', () => {
+        const input = '<div style="background:url(javascript:alert(1))">Content</div>';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('javascript:alert(1)');
+        expect(result).toContain('Content');
+      });
+
+      test('removes style tags with malicious content', () => {
+        const input = '<style>body{background:url(javascript:alert(1))}</style>';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('<style>');
+        expect(result).not.toContain('javascript:alert(1)');
+      });
+    });
+
+    describe('Complex XSS payloads', () => {
+      test('handles mixed case script tags', () => {
+        const input = '<ScRiPt>alert("case insensitive")</ScRiPt>';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('ScRiPt');
+        expect(result).not.toContain('alert("case insensitive")');
+      });
+
+      test('handles encoded script tags', () => {
+        const input = '&lt;script&gt;alert("encoded")&lt;/script&gt;';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('<script>');
+        expect(result).not.toContain('alert("encoded")');
+        expect(result).toContain('&lt;script&gt;');
+      });
+
+      test('handles nested HTML with scripts', () => {
+        const input = '<div><p>Text</p><script>malicious()</script><p>More text</p></div>';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('<script>');
+        expect(result).not.toContain('malicious()');
+        expect(result).toContain('Text');
+        expect(result).toContain('More text');
+      });
+    });
+
+    describe('Markdown-specific XSS vectors', () => {
+      test('sanitizes HTML in markdown links', () => {
+        const input = '[Link](<script>alert("XSS")</script>)';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('<script>');
+        expect(result).not.toContain('alert("XSS")');
+        expect(result).toContain('Link');
+      });
+
+      test('sanitizes HTML in markdown images', () => {
+        const input = '![Alt text](<script>alert("XSS")</script>)';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('<script>');
+        expect(result).not.toContain('alert("XSS")');
+        expect(result).toContain('Alt text');
+      });
+
+      test('preserves legitimate markdown while removing XSS', () => {
+        const input = '# Header\n\n**Bold** text with [link](https://safe.com)\n\n<script>alert("XSS")</script>\n\n- List item';
+        const result = parser.toHtml(input);
+        expect(result).toContain('<h1>Header</h1>');
+        expect(result).toContain('<strong>Bold</strong>');
+        expect(result).toContain('href="https://safe.com"');
+        expect(result).toContain('<ul><li>List item</li></ul>');
+        expect(result).not.toContain('<script>');
+        expect(result).not.toContain('alert("XSS")');
+      });
+    });
+
+    describe('Edge cases and bypass attempts', () => {
+      test('handles incomplete script tags', () => {
+        const input = '<script src="malicious.js"';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('<script');
+        expect(result).not.toContain('malicious.js');
+      });
+
+      test('handles comment-based XSS attempts', () => {
+        const input = '<!-- <script>alert("XSS")</script> -->';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('<script>');
+        expect(result).not.toContain('alert("XSS")');
+      });
+
+      test('handles CDATA-based XSS attempts', () => {
+        const input = '<![CDATA[<script>alert("XSS")</script>]]>';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('<script>');
+        expect(result).not.toContain('alert("XSS")');
+      });
+    });
+
+    describe('URL sanitization in markdown', () => {
+      test('removes dangerous protocols from markdown links', () => {
+        const input = '[Malicious](vbscript:msgbox("XSS"))';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('vbscript:');
+        expect(result).not.toContain('msgbox("XSS")');
+        expect(result).toContain('Malicious');
+      });
+
+      test('removes dangerous protocols from reference links', () => {
+        const input = '[Link][1]\n\n[1]: javascript:void(0)';
+        const result = parser.toHtml(input);
+        expect(result).not.toContain('javascript:');
+        expect(result).not.toContain('void(0)');
+        expect(result).toContain('Link');
+      });
+    });
+  });
+
   describe('Parser configuration', () => {
     test('can disable certain features', () => {
       const input = '# Header\n**bold**';
