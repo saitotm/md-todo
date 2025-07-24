@@ -1,56 +1,94 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { createRemixStub } from '@remix-run/testing';
 import IndexRoute from './_index';
+import type { Todo } from '../lib/types';
 
-// Mock Remix hooks
-vi.mock('@remix-run/react', () => ({
-  useLoaderData: vi.fn(() => ({
-    todos: [],
-    error: null
-  })),
-  useActionData: vi.fn(() => null),
-  Form: ({ children, ...props }: any) => <form {...props}>{children}</form>
-}));
 
-// Mock API client
-vi.mock('../lib/api-client', () => ({
-  getTodos: vi.fn(),
-  updateTodo: vi.fn(),
-  deleteTodo: vi.fn()
-}));
+describe('Index Route Tests', () => {
+  const mockTodos: Todo[] = [
+    {
+      id: '1',
+      title: 'Test Todo 1',
+      content: 'This is test content 1',
+      completed: false,
+      created_at: '2025-01-01T00:00:00Z',
+      updated_at: '2025-01-01T00:00:00Z'
+    },
+    {
+      id: '2', 
+      title: 'Test Todo 2',
+      content: 'This is test content 2',
+      completed: true,
+      created_at: '2025-01-01T01:00:00Z',
+      updated_at: '2025-01-01T01:00:00Z'
+    }
+  ];
 
-// Mock TodoList component
-vi.mock('../components/TodoList', () => ({
-  TodoList: ({ todos, onToggle, onDelete }: any) => (
-    <div data-testid="todo-list-mock">
-      <div data-testid="todo-count">{todos.length} todos</div>
-      <button onClick={() => onToggle('test-id')}>Toggle Test</button>
-      <button onClick={() => onDelete('test-id')}>Delete Test</button>
-    </div>
-  )
-}));
+  describe('Using RemixStub (Recommended)', () => {
+    it('renders todo management interface with empty state', async () => {
+      const RemixStub = createRemixStub([
+        {
+          path: '/',
+          Component: IndexRoute,
+          loader: () => Response.json({ todos: [], error: null })
+        }
+      ]);
 
-describe('Index Route', () => {
-  it('renders todo management interface', () => {
-    render(<IndexRoute />);
-    expect(screen.getByText('Your Todos')).toBeInTheDocument();
+      render(<RemixStub />);
+      
+      // Since loader is async, wait for the content to appear
+      expect(await screen.findByText('Your Todos')).toBeInTheDocument();
+      expect(await screen.findByText('No todos yet. Create your first todo to get started!')).toBeInTheDocument();
+    });
+
+    it('displays statistics bar with correct data', async () => {
+      const RemixStub = createRemixStub([
+        {
+          path: '/',
+          Component: IndexRoute,
+          loader: () => Response.json({ todos: mockTodos, error: null })
+        }
+      ]);
+
+      render(<RemixStub />);
+      
+      expect(await screen.findByText('Total: 2')).toBeInTheDocument();
+      expect(await screen.findByText('Completed: 1')).toBeInTheDocument();
+      expect(await screen.findByText('Pending: 1')).toBeInTheDocument();
+      expect(await screen.findByText('50% complete')).toBeInTheDocument();
+    });
   });
 
-  it('displays statistics bar', () => {
-    render(<IndexRoute />);
-    expect(screen.getByText(/Total:/)).toBeInTheDocument();
-    expect(screen.getByText(/Completed:/)).toBeInTheDocument();
-    expect(screen.getByText(/Pending:/)).toBeInTheDocument();
-  });
+  describe('Error Handling', () => {
+    it('displays error message when loader returns error', async () => {
+      const RemixStub = createRemixStub([
+        {
+          path: '/',
+          Component: IndexRoute,
+          loader: () => Response.json({ todos: [], error: 'Failed to load todos' })
+        }
+      ]);
 
-  it('renders TodoList component', () => {
-    render(<IndexRoute />);
-    expect(screen.getByTestId('todo-list-mock')).toBeInTheDocument();
-  });
+      render(<RemixStub />);
+      
+      expect(await screen.findByText('Failed to load todos')).toBeInTheDocument();
+      expect(await screen.findByText('Your Todos')).toBeInTheDocument();
+    });
 
-  it('displays placeholder for todo creation', () => {
-    render(<IndexRoute />);
-    expect(screen.getByText('Create New Todo')).toBeInTheDocument();
-    expect(screen.getByText(/Todo creation form will be implemented/)).toBeInTheDocument();
+    it('renders empty state when no todos are available', async () => {
+      const RemixStub = createRemixStub([
+        {
+          path: '/',
+          Component: IndexRoute,
+          loader: () => Response.json({ todos: [], error: null })
+        }
+      ]);
+
+      render(<RemixStub />);
+      
+      expect(await screen.findByText('Total: 0')).toBeInTheDocument();
+      expect(await screen.findByText('No todos yet. Create your first todo to get started!')).toBeInTheDocument();
+    });
   });
 });
