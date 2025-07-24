@@ -822,7 +822,7 @@ describe("MarkdownParser", () => {
       // Should preserve the original code content (may be wrapped in spans)
       expect(result).toContain("const");
       expect(result).toContain("message");
-      expect(result).toContain('"Hello, World!');
+      expect(result).toContain('"Hello, World!"');
       expect(result).toContain("console");
       expect(result).toContain("log");
 
