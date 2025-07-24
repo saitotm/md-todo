@@ -78,24 +78,9 @@ export function TodoList({
     );
   }
 
-  // Empty state for filtered todos
-  if (processedTodos.length === 0 && todos.length > 0) {
-    return (
-      <div 
-        data-testid="todo-list-container" 
-        className="space-y-4 md:space-y-6 text-center py-12"
-      >
-        <div className="text-gray-500 dark:text-gray-400">
-          <h3 className="text-lg font-medium mb-2">No todos match your filter</h3>
-          <p>Try adjusting your filter or sort options.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div data-testid="todo-list-container" className="space-y-4 md:space-y-6">
-      {/* Filter and Sort Controls */}
+      {/* Filter and Sort Controls - always show when todos exist */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
         {/* Filter Control */}
         <div className="flex-1">
@@ -144,8 +129,17 @@ export function TodoList({
         </div>
       </div>
 
-      <ul aria-label="Todo items">
-        {processedTodos.map((todo) => (
+      {/* Empty state for filtered todos */}
+      {processedTodos.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-gray-500 dark:text-gray-400">
+            <h3 className="text-lg font-medium mb-2">No todos match your filter</h3>
+            <p>Try adjusting your filter or sort options.</p>
+          </div>
+        </div>
+      ) : (
+        <ul aria-label="Todo items">
+          {processedTodos.map((todo) => (
           <li 
             key={todo.id}
             data-testid={`todo-item-${todo.id}`}
@@ -238,9 +232,10 @@ export function TodoList({
                 </button>
               </div>
             </div>
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
