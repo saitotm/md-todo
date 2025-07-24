@@ -11,6 +11,18 @@ import { Layout as AppLayout } from "./components/Layout";
 import "./tailwind.css";
 import "prismjs/themes/prism-tomorrow.css";
 
+// Add language support for syntax highlighting
+// Import prismjs core first to ensure Prism global is available
+import 'prismjs';
+import 'prismjs/components/prism-rust';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-go';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-json';
+import 'prismjs/components/prism-yaml';
+import 'prismjs/components/prism-toml';
+
 export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {

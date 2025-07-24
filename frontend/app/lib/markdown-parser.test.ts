@@ -1,6 +1,18 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { MarkdownParser } from './markdown-parser';
 
+// Import language support for testing syntax highlighting
+// Import prismjs core first to ensure Prism global is available
+import 'prismjs';
+import 'prismjs/components/prism-rust';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-go';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-json';
+import 'prismjs/components/prism-yaml';
+import 'prismjs/components/prism-toml';
+
 describe('MarkdownParser', () => {
   let parser: MarkdownParser;
 
@@ -619,50 +631,42 @@ describe('MarkdownParser', () => {
       const input = '```typescript\ninterface User {\n  name: string;\n  age: number;\n}\n```';
       const result = parser.toHtml(input);
       
-      expect(result).toContain('<pre>');
+      expect(result).toContain('<pre');
       expect(result).toContain('<code class="language-typescript">');
-      expect(result).toContain('interface User {');
-      expect(result).toContain('name: string;');
-      expect(result).toContain('age: number;');
       expect(result).toContain('</code></pre>');
       
-      // TypeScript highlighting may or may not be available - just check for basic structure
-      // If highlighting is available, it should include token spans
-      if (result.includes('<span class="token')) {
-        expect(result).toMatch(/<span class="token[^"]*">[^<]+<\/span>/);
-      }
+      // TypeScript highlighting should be available and working
+      expect(result).toContain('<span class="token');
+      expect(result).toContain('<span class="token keyword">interface</span>');
     });
 
     test('applies syntax highlighting to Python code blocks', () => {
       const input = '```python\ndef greet(name):\n    print(f"Hello, {name}!")\n```';
       const result = parser.toHtml(input);
       
-      expect(result).toContain('<pre>');
+      expect(result).toContain('<pre');
       expect(result).toContain('<code class="language-python">');
-      expect(result).toContain('def greet(name):');
-      expect(result).toContain('print(f"Hello, {name}!")');
       expect(result).toContain('</code></pre>');
       
-      // Python highlighting may or may not be available - just check for basic structure
-      if (result.includes('<span class="token')) {
-        expect(result).toMatch(/<span class="token[^"]*">[^<]+<\/span>/);
-      }
+      // Python highlighting should be available and working
+      expect(result).toContain('<span class="token');
+      expect(result).toContain('<span class="token keyword">def</span>');
+      expect(result).toContain('<span class="token keyword">print</span>');
     });
 
     test('applies syntax highlighting to Rust code blocks', () => {
       const input = '```rust\nfn main() {\n    println!("Hello, Rust!");\n}\n```';
       const result = parser.toHtml(input);
       
-      expect(result).toContain('<pre>');
+      expect(result).toContain('<pre');
       expect(result).toContain('<code class="language-rust">');
-      expect(result).toContain('fn main() {');
-      expect(result).toContain('println!("Hello, Rust!");');
       expect(result).toContain('</code></pre>');
       
-      // Rust highlighting may or may not be available - just check for basic structure
-      if (result.includes('<span class="token')) {
-        expect(result).toMatch(/<span class="token[^"]*">[^<]+<\/span>/);
-      }
+      // Rust highlighting should be available and working
+      expect(result).toContain('<span class="token');
+      expect(result).toContain('<span class="token keyword">fn</span>');
+      expect(result).toContain('<span class="token macro property">println!</span>');
+      expect(result).toContain('Hello, Rust!');
     });
 
     test('applies syntax highlighting to HTML code blocks', () => {
@@ -671,15 +675,11 @@ describe('MarkdownParser', () => {
       
       expect(result).toContain('<pre');
       expect(result).toContain('<code class="language-html">');
-      expect(result).toContain('div');
-      expect(result).toContain('h1');
-      expect(result).toContain('Title');
       expect(result).toContain('</code></pre>');
       
-      // HTML highlighting may or may not be available - just check for basic structure
-      if (result.includes('<span class="token')) {
-        expect(result).toMatch(/<span class="token[^"]*">[^<]+<\/span>/);
-      }
+      // HTML highlighting should be available (built into Prism core)
+      expect(result).toContain('<span class="token');
+      expect(result).toContain('<span class="token tag">');
     });
 
     test('applies syntax highlighting to CSS code blocks', () => {
@@ -688,41 +688,74 @@ describe('MarkdownParser', () => {
       
       expect(result).toContain('<pre');
       expect(result).toContain('<code class="language-css">');
-      expect(result).toContain('.container');
-      expect(result).toContain('background-color');
-      expect(result).toContain('#f0f0f0');
-      expect(result).toContain('padding');
-      expect(result).toContain('1rem');
       expect(result).toContain('</code></pre>');
       
-      // CSS highlighting may or may not be available - just check for basic structure
-      if (result.includes('<span class="token')) {
-        expect(result).toMatch(/<span class="token[^"]*">[^<]+<\/span>/);
-      }
+      // CSS highlighting should be available (built into Prism core)
+      expect(result).toContain('<span class="token');
+      expect(result).toContain('<span class="token selector">');
+      expect(result).toContain('<span class="token property">');
     });
 
     test('applies syntax highlighting to JSON code blocks', () => {
       const input = '```json\n{\n  "name": "test",\n  "version": "1.0.0",\n  "active": true\n}\n```';
       const result = parser.toHtml(input);
       
-      expect(result).toContain('<pre>');
+      expect(result).toContain('<pre');
       expect(result).toContain('<code class="language-json">');
-      expect(result).toContain('"name": "test"');
-      expect(result).toContain('"version": "1.0.0"');
-      expect(result).toContain('"active": true');
       expect(result).toContain('</code></pre>');
       
-      // JSON highlighting may or may not be available - just check for basic structure
-      if (result.includes('<span class="token')) {
-        expect(result).toMatch(/<span class="token[^"]*">[^<]+<\/span>/);
-      }
+      // JSON highlighting should be available and working
+      expect(result).toContain('<span class="token');
+      expect(result).toContain('<span class="token property">');
+      expect(result).toContain('<span class="token string">');
+      expect(result).toContain('<span class="token boolean">true</span>');
+    });
+
+    test('applies syntax highlighting to Go code blocks', () => {
+      const input = '```go\npackage main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello, Go!")\n}\n```';
+      const result = parser.toHtml(input);
+      
+      expect(result).toContain('<pre');
+      expect(result).toContain('<code class="language-go">');
+      expect(result).toContain('</code></pre>');
+      
+      // Go highlighting should be available and working
+      expect(result).toContain('<span class="token');
+      expect(result).toContain('<span class="token keyword">package</span>');
+      expect(result).toContain('<span class="token keyword">func</span>');
+    });
+
+    test('applies syntax highlighting to Bash code blocks', () => {
+      const input = '```bash\n#!/bin/bash\necho "Hello, World!"\nfor i in {1..5}; do\n  echo $i\ndone\n```';
+      const result = parser.toHtml(input);
+      
+      expect(result).toContain('<pre');
+      expect(result).toContain('<code class="language-bash">');
+      expect(result).toContain('</code></pre>');
+      
+      // Bash highlighting should be available and working
+      expect(result).toContain('<span class="token');
+      expect(result).toContain('<span class="token builtin class-name">echo</span>');
+    });
+
+    test('applies syntax highlighting to YAML code blocks', () => {
+      const input = '```yaml\nname: my-app\nversion: 1.0.0\ndependencies:\n  - react\n  - typescript\n```';
+      const result = parser.toHtml(input);
+      
+      expect(result).toContain('<pre');
+      expect(result).toContain('<code class="language-yaml">');
+      expect(result).toContain('</code></pre>');
+      
+      // YAML highlighting should be available and working
+      expect(result).toContain('<span class="token');
+      expect(result).toContain('<span class="token key atrule">name</span>');
     });
 
     test('handles unsupported language gracefully', () => {
       const input = '```unknownlang\nsome code here\n```';
       const result = parser.toHtml(input);
       
-      expect(result).toContain('<pre>');
+      expect(result).toContain('<pre');
       expect(result).toContain('<code class="language-unknownlang">');
       expect(result).toContain('some code here');
       expect(result).toContain('</code></pre>');
