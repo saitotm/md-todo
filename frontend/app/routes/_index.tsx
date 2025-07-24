@@ -2,7 +2,7 @@ import type { MetaFunction, ActionFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import { useLoaderData, useActionData, Form } from "@remix-run/react";
 import { useState } from "react";
-import { TodoList } from "../components/TodoList";
+import { TodoList, FilterType, SortType } from "../components/TodoList";
 import { getTodos, updateTodo, deleteTodo } from "../lib/api-client";
 import { Todo } from "../lib/types";
 
@@ -67,6 +67,8 @@ export default function Index() {
   const actionData = useActionData<typeof action>();
   const [pendingToggle, setPendingToggle] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterType>('all');
+  const [sortBy, setSortBy] = useState<SortType>('created_at_desc');
 
   const handleToggle = (id: string) => {
     setPendingToggle(id);
@@ -143,6 +145,10 @@ export default function Index() {
           todos={todos || []}
           onToggle={handleToggle}
           onDelete={handleDelete}
+          filter={filter}
+          sortBy={sortBy}
+          onFilterChange={setFilter}
+          onSortChange={setSortBy}
         />
       </div>
 

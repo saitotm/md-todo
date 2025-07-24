@@ -403,4 +403,396 @@ describe('TodoList Component', () => {
       expect(screen.getByText('Malformed Markdown')).toBeInTheDocument();
     });
   });
+
+  describe('Task Filtering Functionality', () => {
+    const filterTestTodos = [
+      createMockTodo({
+        id: '018c2e65-4b7f-7000-8000-000000000010',
+        title: 'Completed Task 1',
+        content: 'This task is completed',
+        completed: true,
+        created_at: '2025-01-15T10:00:00Z'
+      }),
+      createMockTodo({
+        id: '018c2e65-4b7f-7000-8000-000000000011',
+        title: 'Incomplete Task 1',
+        content: 'This task is not completed',
+        completed: false,
+        created_at: '2025-01-16T10:00:00Z'
+      }),
+      createMockTodo({
+        id: '018c2e65-4b7f-7000-8000-000000000012',
+        title: 'Completed Task 2',
+        content: 'Another completed task',
+        completed: true,
+        created_at: '2025-01-17T10:00:00Z'
+      })
+    ];
+
+    it('displays all todos when filter is set to "all"', () => {
+      render(
+        <TodoList 
+          todos={filterTestTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          filter="all"
+        />
+      );
+      
+      expect(screen.getByText('Completed Task 1')).toBeInTheDocument();
+      expect(screen.getByText('Incomplete Task 1')).toBeInTheDocument();
+      expect(screen.getByText('Completed Task 2')).toBeInTheDocument();
+    });
+
+    it('displays only completed todos when filter is set to "completed"', () => {
+      render(
+        <TodoList 
+          todos={filterTestTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          filter="completed"
+        />
+      );
+      
+      expect(screen.getByText('Completed Task 1')).toBeInTheDocument();
+      expect(screen.getByText('Completed Task 2')).toBeInTheDocument();
+      expect(screen.queryByText('Incomplete Task 1')).not.toBeInTheDocument();
+    });
+
+    it('displays only incomplete todos when filter is set to "incomplete"', () => {
+      render(
+        <TodoList 
+          todos={filterTestTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          filter="incomplete"
+        />
+      );
+      
+      expect(screen.getByText('Incomplete Task 1')).toBeInTheDocument();
+      expect(screen.queryByText('Completed Task 1')).not.toBeInTheDocument();
+      expect(screen.queryByText('Completed Task 2')).not.toBeInTheDocument();
+    });
+
+    it('shows empty state when filtered results are empty', () => {
+      const allCompletedTodos = filterTestTodos.map(todo => ({ ...todo, completed: true }));
+      
+      render(
+        <TodoList 
+          todos={allCompletedTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          filter="incomplete"
+        />
+      );
+      
+      expect(screen.getByText(/no todos match your filter/i)).toBeInTheDocument();
+    });
+
+    it('calls onFilterChange when filter dropdown is changed', () => {
+      const mockOnFilterChange = vi.fn();
+      
+      render(
+        <TodoList 
+          todos={filterTestTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          filter="all"
+          onFilterChange={mockOnFilterChange}
+        />
+      );
+      
+      const filterSelect = screen.getByTestId('filter-select');
+      fireEvent.change(filterSelect, { target: { value: 'completed' } });
+      
+      expect(mockOnFilterChange).toHaveBeenCalledWith('completed');
+    });
+
+    it('displays correct filter options in dropdown', () => {
+      render(
+        <TodoList 
+          todos={filterTestTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          filter="all"
+        />
+      );
+      
+      const filterSelect = screen.getByTestId('filter-select');
+      expect(filterSelect).toBeInTheDocument();
+      
+      const allOption = screen.getByRole('option', { name: 'All' });
+      const completedOption = screen.getByRole('option', { name: 'Completed' });
+      const incompleteOption = screen.getByRole('option', { name: 'Incomplete' });
+      
+      expect(allOption).toBeInTheDocument();
+      expect(completedOption).toBeInTheDocument();
+      expect(incompleteOption).toBeInTheDocument();
+    });
+  });
+
+  describe('Task Sorting Functionality', () => {
+    const sortTestTodos = [
+      createMockTodo({
+        id: '018c2e65-4b7f-7000-8000-000000000020',
+        title: 'Z Task',
+        content: 'Last alphabetically',
+        completed: false,
+        created_at: '2025-01-15T10:00:00Z' // Oldest
+      }),
+      createMockTodo({
+        id: '018c2e65-4b7f-7000-8000-000000000021',
+        title: 'A Task',
+        content: 'First alphabetically',
+        completed: true,
+        created_at: '2025-01-17T10:00:00Z' // Newest
+      }),
+      createMockTodo({
+        id: '018c2e65-4b7f-7000-8000-000000000022',
+        title: 'M Task',
+        content: 'Middle alphabetically',
+        completed: false,
+        created_at: '2025-01-16T10:00:00Z' // Middle
+      })
+    ];
+
+    it('sorts todos by creation date newest first when sortBy is "created_at_desc"', () => {
+      render(
+        <TodoList 
+          todos={sortTestTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          sortBy="created_at_desc"
+        />
+      );
+      
+      const todoItems = screen.getAllByTestId(/^todo-item-/);
+      expect(todoItems[0]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000021'); // A Task (newest)
+      expect(todoItems[1]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000022'); // M Task (middle)
+      expect(todoItems[2]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000020'); // Z Task (oldest)
+    });
+
+    it('sorts todos by creation date oldest first when sortBy is "created_at_asc"', () => {
+      render(
+        <TodoList 
+          todos={sortTestTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          sortBy="created_at_asc"
+        />
+      );
+      
+      const todoItems = screen.getAllByTestId(/^todo-item-/);
+      expect(todoItems[0]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000020'); // Z Task (oldest)
+      expect(todoItems[1]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000022'); // M Task (middle)
+      expect(todoItems[2]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000021'); // A Task (newest)
+    });
+
+    it('sorts todos alphabetically by title when sortBy is "title_asc"', () => {
+      render(
+        <TodoList 
+          todos={sortTestTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          sortBy="title_asc"
+        />
+      );
+      
+      const todoItems = screen.getAllByTestId(/^todo-item-/);
+      expect(todoItems[0]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000021'); // A Task
+      expect(todoItems[1]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000022'); // M Task
+      expect(todoItems[2]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000020'); // Z Task
+    });
+
+    it('sorts todos reverse alphabetically by title when sortBy is "title_desc"', () => {
+      render(
+        <TodoList 
+          todos={sortTestTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          sortBy="title_desc"
+        />
+      );
+      
+      const todoItems = screen.getAllByTestId(/^todo-item-/);
+      expect(todoItems[0]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000020'); // Z Task
+      expect(todoItems[1]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000022'); // M Task
+      expect(todoItems[2]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000021'); // A Task
+    });
+
+    it('sorts todos by completion status when sortBy is "completed"', () => {
+      render(
+        <TodoList 
+          todos={sortTestTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          sortBy="completed"
+        />
+      );
+      
+      const todoItems = screen.getAllByTestId(/^todo-item-/);
+      // Incomplete tasks should come first
+      expect(todoItems[0]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000020'); // Z Task (incomplete)
+      expect(todoItems[1]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000022'); // M Task (incomplete)
+      expect(todoItems[2]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000021'); // A Task (completed)
+    });
+
+    it('calls onSortChange when sort dropdown is changed', () => {
+      const mockOnSortChange = vi.fn();
+      
+      render(
+        <TodoList 
+          todos={sortTestTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          sortBy="created_at_desc"
+          onSortChange={mockOnSortChange}
+        />
+      );
+      
+      const sortSelect = screen.getByTestId('sort-select');
+      fireEvent.change(sortSelect, { target: { value: 'title_asc' } });
+      
+      expect(mockOnSortChange).toHaveBeenCalledWith('title_asc');
+    });
+
+    it('displays correct sort options in dropdown', () => {
+      render(
+        <TodoList 
+          todos={sortTestTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          sortBy="created_at_desc"
+        />
+      );
+      
+      const sortSelect = screen.getByTestId('sort-select');
+      expect(sortSelect).toBeInTheDocument();
+      
+      const newestFirstOption = screen.getByRole('option', { name: 'Newest First' });
+      const oldestFirstOption = screen.getByRole('option', { name: 'Oldest First' });
+      const titleAscOption = screen.getByRole('option', { name: 'Title A-Z' });
+      const titleDescOption = screen.getByRole('option', { name: 'Title Z-A' });
+      const completionStatusOption = screen.getByRole('option', { name: 'By Status' });
+      
+      expect(newestFirstOption).toBeInTheDocument();
+      expect(oldestFirstOption).toBeInTheDocument();
+      expect(titleAscOption).toBeInTheDocument();
+      expect(titleDescOption).toBeInTheDocument();
+      expect(completionStatusOption).toBeInTheDocument();
+    });
+
+    it('maintains current sort order when todos are updated', () => {
+      const { rerender } = render(
+        <TodoList 
+          todos={sortTestTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          sortBy="title_asc"
+        />
+      );
+      
+      const updatedTodos = [
+        ...sortTestTodos,
+        createMockTodo({
+          id: '018c2e65-4b7f-7000-8000-000000000023',
+          title: 'B Task',
+          content: 'New task',
+          completed: false,
+          created_at: '2025-01-18T10:00:00Z'
+        })
+      ];
+      
+      rerender(
+        <TodoList 
+          todos={updatedTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          sortBy="title_asc"
+        />
+      );
+      
+      const todoItems = screen.getAllByTestId(/^todo-item-/);
+      expect(todoItems[0]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000021'); // A Task
+      expect(todoItems[1]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000023'); // B Task
+      expect(todoItems[2]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000022'); // M Task
+      expect(todoItems[3]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000020'); // Z Task
+    });
+  });
+
+  describe('Combined Filtering and Sorting', () => {
+    const combinedTestTodos = [
+      createMockTodo({
+        id: '018c2e65-4b7f-7000-8000-000000000030',
+        title: 'Completed Z Task',
+        content: 'Completed task',
+        completed: true,
+        created_at: '2025-01-15T10:00:00Z'
+      }),
+      createMockTodo({
+        id: '018c2e65-4b7f-7000-8000-000000000031',
+        title: 'Incomplete A Task',
+        content: 'Incomplete task',
+        completed: false,
+        created_at: '2025-01-17T10:00:00Z'
+      }),
+      createMockTodo({
+        id: '018c2e65-4b7f-7000-8000-000000000032',
+        title: 'Completed A Task',
+        content: 'Another completed task',
+        completed: true,
+        created_at: '2025-01-16T10:00:00Z'
+      })
+    ];
+
+    it('applies both filtering and sorting correctly', () => {
+      render(
+        <TodoList 
+          todos={combinedTestTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          filter="completed"
+          sortBy="title_asc"
+        />
+      );
+      
+      const todoItems = screen.getAllByTestId(/^todo-item-/);
+      expect(todoItems).toHaveLength(2); // Only completed tasks
+      expect(todoItems[0]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000032'); // Completed A Task
+      expect(todoItems[1]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000030'); // Completed Z Task
+    });
+
+    it('sorts filtered results by creation date', () => {
+      render(
+        <TodoList 
+          todos={combinedTestTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          filter="completed"
+          sortBy="created_at_desc"
+        />
+      );
+      
+      const todoItems = screen.getAllByTestId(/^todo-item-/);
+      expect(todoItems).toHaveLength(2); // Only completed tasks
+      expect(todoItems[0]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000032'); // Completed A Task (newer)
+      expect(todoItems[1]).toHaveAttribute('data-testid', 'todo-item-018c2e65-4b7f-7000-8000-000000000030'); // Completed Z Task (older)
+    });
+
+    it('handles empty results when filter and sort are applied', () => {
+      const allIncompleteTodos = combinedTestTodos.map(todo => ({ ...todo, completed: false }));
+      
+      render(
+        <TodoList 
+          todos={allIncompleteTodos} 
+          onToggle={mockOnToggle} 
+          onDelete={mockOnDelete} 
+          filter="completed"
+          sortBy="title_asc"
+        />
+      );
+      
+      expect(screen.getByText(/no todos match your filter/i)).toBeInTheDocument();
+    });
+  });
 });
