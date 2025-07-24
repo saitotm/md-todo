@@ -9,6 +9,7 @@ import type { LinksFunction } from "@remix-run/node";
 import { Layout as AppLayout } from "./components/Layout";
 
 import "./tailwind.css";
+import "prismjs/themes/prism-tomorrow.css";
 
 export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
