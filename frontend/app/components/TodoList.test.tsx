@@ -521,9 +521,9 @@ describe('TodoList Component', () => {
       const filterSelect = screen.getByTestId('filter-select');
       expect(filterSelect).toBeInTheDocument();
       
-      const allOption = screen.getByDisplayValue('All');
-      const completedOption = screen.getByDisplayValue('Completed');
-      const incompleteOption = screen.getByDisplayValue('Incomplete');
+      const allOption = screen.getByRole('option', { name: 'All' });
+      const completedOption = screen.getByRole('option', { name: 'Completed' });
+      const incompleteOption = screen.getByRole('option', { name: 'Incomplete' });
       
       expect(allOption).toBeInTheDocument();
       expect(completedOption).toBeInTheDocument();
@@ -669,11 +669,11 @@ describe('TodoList Component', () => {
       const sortSelect = screen.getByTestId('sort-select');
       expect(sortSelect).toBeInTheDocument();
       
-      const newestFirstOption = screen.getByDisplayValue('Newest First');
-      const oldestFirstOption = screen.getByDisplayValue('Oldest First');
-      const titleAscOption = screen.getByDisplayValue('Title A-Z');
-      const titleDescOption = screen.getByDisplayValue('Title Z-A');
-      const completionStatusOption = screen.getByDisplayValue('By Status');
+      const newestFirstOption = screen.getByRole('option', { name: 'Newest First' });
+      const oldestFirstOption = screen.getByRole('option', { name: 'Oldest First' });
+      const titleAscOption = screen.getByRole('option', { name: 'Title A-Z' });
+      const titleDescOption = screen.getByRole('option', { name: 'Title Z-A' });
+      const completionStatusOption = screen.getByRole('option', { name: 'By Status' });
       
       expect(newestFirstOption).toBeInTheDocument();
       expect(oldestFirstOption).toBeInTheDocument();

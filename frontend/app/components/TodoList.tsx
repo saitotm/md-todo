@@ -1,16 +1,69 @@
+import { useMemo } from 'react';
 import { Todo } from '../lib/types';
 import { MarkdownParser } from '../lib/markdown-parser';
+
+export type FilterType = 'all' | 'completed' | 'incomplete';
+export type SortType = 'created_at_desc' | 'created_at_asc' | 'title_asc' | 'title_desc' | 'completed';
 
 interface TodoListProps {
   todos: Todo[];
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  filter?: FilterType;
+  sortBy?: SortType;
+  onFilterChange?: (filter: FilterType) => void;
+  onSortChange?: (sortBy: SortType) => void;
 }
 
-export function TodoList({ todos, onToggle, onDelete }: TodoListProps) {
+export function TodoList({ 
+  todos, 
+  onToggle, 
+  onDelete, 
+  filter = 'all',
+  sortBy = 'created_at_desc',
+  onFilterChange,
+  onSortChange
+}: TodoListProps) {
   const markdownParser = new MarkdownParser();
 
-  // Empty state
+  // Filter and sort todos
+  const processedTodos = useMemo(() => {
+    // Apply filtering
+    let filteredTodos = todos;
+    if (filter === 'completed') {
+      filteredTodos = todos.filter(todo => todo.completed);
+    } else if (filter === 'incomplete') {
+      filteredTodos = todos.filter(todo => !todo.completed);
+    }
+    // filter === 'all' shows all todos
+
+    // Apply sorting
+    const sortedTodos = [...filteredTodos].sort((a, b) => {
+      switch (sortBy) {
+        case 'created_at_desc':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'created_at_asc':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'title_asc':
+          return a.title.localeCompare(b.title);
+        case 'title_desc':
+          return b.title.localeCompare(a.title);
+        case 'completed':
+          // Incomplete tasks first, then completed
+          if (a.completed !== b.completed) {
+            return a.completed ? 1 : -1;
+          }
+          // If same completion status, sort by creation date (oldest first)
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        default:
+          return 0;
+      }
+    });
+
+    return sortedTodos;
+  }, [todos, filter, sortBy]);
+
+  // Empty state for original todos
   if (todos.length === 0) {
     return (
       <div 
@@ -25,10 +78,74 @@ export function TodoList({ todos, onToggle, onDelete }: TodoListProps) {
     );
   }
 
+  // Empty state for filtered todos
+  if (processedTodos.length === 0 && todos.length > 0) {
+    return (
+      <div 
+        data-testid="todo-list-container" 
+        className="space-y-4 md:space-y-6 text-center py-12"
+      >
+        <div className="text-gray-500 dark:text-gray-400">
+          <h3 className="text-lg font-medium mb-2">No todos match your filter</h3>
+          <p>Try adjusting your filter or sort options.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div data-testid="todo-list-container" className="space-y-4 md:space-y-6">
+      {/* Filter and Sort Controls */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        {/* Filter Control */}
+        <div className="flex-1">
+          <label htmlFor="filter-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Filter Tasks
+          </label>
+          <select
+            id="filter-select"
+            data-testid="filter-select"
+            value={filter}
+            onChange={(e) => onFilterChange?.(e.target.value as FilterType)}
+            disabled={!onFilterChange}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm 
+                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+                     bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                     disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <option value="all">All</option>
+            <option value="completed">Completed</option>
+            <option value="incomplete">Incomplete</option>
+          </select>
+        </div>
+
+        {/* Sort Control */}
+        <div className="flex-1">
+          <label htmlFor="sort-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Sort Tasks
+          </label>
+          <select
+            id="sort-select"
+            data-testid="sort-select"
+            value={sortBy}
+            onChange={(e) => onSortChange?.(e.target.value as SortType)}
+            disabled={!onSortChange}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm 
+                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+                     bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                     disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <option value="created_at_desc">Newest First</option>
+            <option value="created_at_asc">Oldest First</option>
+            <option value="title_asc">Title A-Z</option>
+            <option value="title_desc">Title Z-A</option>
+            <option value="completed">By Status</option>
+          </select>
+        </div>
+      </div>
+
       <ul aria-label="Todo items">
-        {todos.map((todo) => (
+        {processedTodos.map((todo) => (
           <li 
             key={todo.id}
             data-testid={`todo-item-${todo.id}`}
