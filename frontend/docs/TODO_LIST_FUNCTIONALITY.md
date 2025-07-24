@@ -64,6 +64,7 @@ The filter control is displayed as a dropdown selector that allows users to easi
 ```
 
 The filtering functionality enable users to:
+
 - Focus on pending tasks when they need to work
 - Review completed tasks to track progress
 - View all tasks for a comprehensive overview
@@ -114,7 +115,9 @@ Each todo has a completion state managed through a checkbox interface:
   type="checkbox"
   checked={todo.completed}
   onChange={() => onToggle(todo.id)}
-  aria-label={`Mark "${todo.title}" as ${todo.completed ? 'incomplete' : 'complete'}`}
+  aria-label={`Mark "${todo.title}" as ${
+    todo.completed ? "incomplete" : "complete"
+  }`}
 />
 ```
 
@@ -144,14 +147,15 @@ const markdownParser = new MarkdownParser();
 // In the component render
 <div
   dangerouslySetInnerHTML={{
-    __html: markdownParser.toHtml(todo.content)
+    __html: markdownParser.toHtml(todo.content),
   }}
-/>
+/>;
 ```
 
 ### Supported Features
 
 The Markdown integration provides:
+
 - **Syntax highlighting** for code blocks with automatic syntax highlighting
 - **Link rendering** with proper HTML anchor tags
 - **Text formatting** including bold, italic, and emphasis
@@ -163,21 +167,21 @@ The Markdown integration provides:
 ### Basic TodoList Implementation
 
 ```tsx
-import { TodoList, FilterType, SortType } from '../components/TodoList';
-import { useState } from 'react';
+import { TodoList, FilterType, SortType } from "../components/TodoList";
+import { useState } from "react";
 
 function TodoManager({ todos }: { todos: Todo[] }) {
-  const [filter, setFilter] = useState<FilterType>('all');
-  const [sortBy, setSortBy] = useState<SortType>('created_at_desc');
+  const [filter, setFilter] = useState<FilterType>("all");
+  const [sortBy, setSortBy] = useState<SortType>("created_at_desc");
 
   const handleToggle = (id: string) => {
     // Implementation for toggling completion state
-    updateTodo(id, { completed: !todos.find(t => t.id === id)?.completed });
+    updateTodo(id, { completed: !todos.find((t) => t.id === id)?.completed });
   };
 
   const handleDelete = (id: string) => {
     // Implementation for deleting todo
-    if (confirm('Are you sure you want to delete this todo?')) {
+    if (confirm("Are you sure you want to delete this todo?")) {
       deleteTodo(id);
     }
   };
@@ -200,8 +204,8 @@ function TodoManager({ todos }: { todos: Todo[] }) {
 
 ```tsx
 function AdvancedTodoList() {
-  const [filter, setFilter] = useState<FilterType>('incomplete');
-  const [sortBy, setSortBy] = useState<SortType>('title_asc');
+  const [filter, setFilter] = useState<FilterType>("incomplete");
+  const [sortBy, setSortBy] = useState<SortType>("title_asc");
 
   return (
     <TodoList
@@ -216,32 +220,6 @@ function AdvancedTodoList() {
   );
 }
 ```
-
-## User Guide
-
-### How to Filter Tasks
-
-1. **View All Tasks**: Select "All" from the filter dropdown to see all todos
-2. **View Completed Tasks**: Select "Completed" to focus on finished tasks
-3. **View Pending Tasks**: Select "Incomplete" to see tasks that need attention
-
-### How to Sort Tasks
-
-1. **By Date**: Choose "Newest First" or "Oldest First" to organize by creation time
-2. **By Title**: Choose "Title A-Z" or "Title Z-A" for alphabetical organization
-3. **By Status**: Choose "By Status" to group incomplete tasks before completed ones
-
-### How to Mark as Complete
-
-1. Click the checkbox next to any todo title to mark as complete
-2. The todo will immediately show visual completion indicators
-3. The change is automatically saved to the backend
-
-### How to Delete Tasks
-
-1. Click the delete button (trash icon) next to any todo
-2. A confirmation dialog will appear to prevent accidental deletion
-3. Confirm to permanently remove the todo
 
 ## Accessibility
 
@@ -266,71 +244,3 @@ The Todo List component implements comprehensive accessibility features to ensur
 - Focus indicators are clearly visible
 - Text sizing respects user preferences
 - Color is not the only means of conveying information
-
-## Responsive Design
-
-The Todo List adapts seamlessly across different screen sizes and devices.
-
-### Mobile Optimization
-
-- **Touch-friendly targets**: All buttons and controls are appropriately sized for touch
-- **Responsive layout**: Controls stack vertically on mobile devices
-- **Optimized spacing**: Proper spacing between elements for mobile interaction
-
-### Desktop Enhancement
-
-- **Side-by-side controls**: Filter and sort controls appear side-by-side on desktop screens
-- **Hover effects**: Interactive feedback for mouse users
-- **Keyboard shortcuts**: Enhanced keyboard navigation for power users
-
-### Breakpoint Behavior
-
-The component uses responsive breakpoint definitions to optimize layout:
-
-- **Small screens** (< 640px): Stacked layout with full-width controls
-- **Medium screens** (640px - 1024px): Flexible layout with responsive spacing
-- **Large screens** (> 1024px): Optimized layout with maximum content density
-
-## Troubleshooting
-
-### Common Issues and Solutions
-
-#### Empty State Display
-
-When no todos are available, the component displays a helpful empty state message:
-- **Initial empty state**: "No todos yet - Create your first todo to get started!"
-- **Filtered empty state**: "No todos match your filter - Try adjusting your filter options"
-
-#### No Matching Results
-
-When filters result in no matching todos:
-1. Check the current filter setting
-2. Try switching to "All" to see all todos
-3. Verify that todos exist in the system
-4. Consider adjusting sort options to ensure items are visible
-
-#### Filter/Sort Controls Not Responding
-
-If filter or sort controls don't work:
-1. Ensure `onFilterChange` and `onSortChange` props are provided
-2. Verify callback functions are properly implemented
-3. Check for JavaScript errors in the console
-4. Confirm component is receiving updated props
-
-#### Performance Issues with Large Lists
-
-For optimal performance with many todos:
-1. Consider implementing virtual scrolling for lists with 100+ items
-2. Debounce filter and sort operations if needed
-3. Use React.memo for TodoList component optimization
-4. Implement pagination for very large datasets
-
-### Error States
-
-The component gracefully handles various error conditions:
-- **Missing props**: Provides sensible defaults where possible
-- **Invalid data**: Filters out invalid todo items
-- **Network failures**: Maintains local state during temporary outages
-- **Malformed content**: Safely renders problematic Markdown content
-
-This comprehensive documentation ensures that developers and users can effectively utilize all aspects of the Todo List functionality while maintaining accessibility, performance, and user experience standards.
