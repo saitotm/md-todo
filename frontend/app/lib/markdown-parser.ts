@@ -144,12 +144,56 @@ export class MarkdownParser {
   }
 
   private cleanupHtml(html: string): string {
-    // Clean up HTML output to match expected format
+    // Split HTML into code blocks and non-code content for separate processing
+    const codeBlockRegex = /(<pre[^>]*><code[^>]*>[\s\S]*?<\/code><\/pre>)/g;
+    const parts: string[] = [];
+    let lastIndex = 0;
+    let match;
+
+    // Extract code blocks and non-code parts
+    while ((match = codeBlockRegex.exec(html)) !== null) {
+      // Add non-code content before this code block
+      if (match.index > lastIndex) {
+        const nonCodeContent = html.slice(lastIndex, match.index);
+        parts.push(this.cleanupNonCodeHtml(nonCodeContent));
+      }
+      
+      // Add code block with minimal cleanup
+      parts.push(this.cleanupCodeBlock(match[1]));
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining non-code content
+    if (lastIndex < html.length) {
+      const remainingContent = html.slice(lastIndex);
+      parts.push(this.cleanupNonCodeHtml(remainingContent));
+    }
+
+    return parts.join('');
+  }
+
+  private cleanupCodeBlock(codeBlock: string): string {
+    // Minimal cleanup for code blocks - preserve internal spacing
+    return codeBlock
+      .replace(/<\/code>\s+<\/pre>/g, "</code></pre>") // Remove whitespace before closing code block
+      .replace(/&#x([0-9A-F]+);/gi, (match, hex) => {
+        // Convert hex entities to standard entities
+        const dec = parseInt(hex, 16);
+        const entityMap: { [key: number]: string } = {
+          38: "&amp;", // &
+          60: "&lt;", // <
+          62: "&gt;", // >
+          34: "&quot;", // "
+          39: "&#39;", // '
+        };
+        return entityMap[dec] || match;
+      });
+  }
+
+  private cleanupNonCodeHtml(html: string): string {
+    // Aggressive cleanup for non-code content
     return html
       .replace(/>\s+</g, "><") // Remove whitespace between tags
-      .replace(/<\/code>\s+<\/pre>/g, "</code></pre>") // Remove whitespace before closing code block
-      .replace(/<code[^>]*>\s+/g, (match) => match.replace(/\s+$/, "")) // Remove leading whitespace in code
-      .replace(/\s+<\/code>/g, "</code>") // Remove trailing whitespace in code
       .replace(/<\/li>\s+<ul>/g, "</li><ul>") // Remove space between list item and nested list
       .replace(/<br>\s+/g, "<br>") // Remove space after <br> tags
       .replace(/&#x([0-9A-F]+);/gi, (match, hex) => {
