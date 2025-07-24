@@ -27,13 +27,12 @@ export function TodoList({ todos, onToggle, onDelete }: TodoListProps) {
 
   return (
     <div data-testid="todo-list-container" className="space-y-4 md:space-y-6">
-      <ul role="list" aria-label="Todo items">
+      <ul aria-label="Todo items">
         {todos.map((todo) => (
           <li 
             key={todo.id}
             data-testid={`todo-item-${todo.id}`}
             aria-labelledby={`todo-title-${todo.id}`}
-            role="listitem"
             className={`
               border rounded-lg p-4 md:p-6 bg-white dark:bg-gray-800 
               border-gray-200 dark:border-gray-700 shadow-sm
