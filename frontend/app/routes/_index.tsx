@@ -94,19 +94,19 @@ export default function Index() {
             </div>
             <div className="text-sm text-green-700 dark:text-green-300">
               <span className="font-medium">
-                Completed: {todos?.filter(todo => todo.completed).length || 0}
+                Completed: {todos?.filter((todo: Todo) => todo.completed).length || 0}
               </span>
             </div>
             <div className="text-sm text-orange-700 dark:text-orange-300">
               <span className="font-medium">
-                Pending: {todos?.filter(todo => !todo.completed).length || 0}
+                Pending: {todos?.filter((todo: Todo) => !todo.completed).length || 0}
               </span>
             </div>
           </div>
           <div className="text-xs text-gray-600 dark:text-gray-400">
             {(todos?.length || 0) === 0 
               ? "No todos yet" 
-              : `${Math.round((todos?.filter(todo => todo.completed).length || 0) / (todos?.length || 1) * 100)}% complete`
+              : `${Math.round((todos?.filter((todo: Todo) => todo.completed).length || 0) / (todos?.length || 1) * 100)}% complete`
             }
           </div>
         </div>
