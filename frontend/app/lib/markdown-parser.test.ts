@@ -178,21 +178,21 @@ describe("MarkdownParser", () => {
     test("converts code blocks", () => {
       const input = '```javascript\nconsole.log("Hello World");\n```';
       const expected =
-        '<pre class="language-javascript"><code class="language-javascript">console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">&quot;Hello World"</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>';
+        '<pre class="language-javascript"><code class="language-javascript">console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">"Hello World"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>\n</code></pre>';
       const result = parser.toHtml(input);
       expect(result).toBe(expected);
     });
 
     test("converts code blocks without language", () => {
       const input = "```\nsome code here\n```";
-      const expected = "<pre><code>some code here</code></pre>";
+      const expected = "<pre><code>some code here\n</code></pre>";
       const result = parser.toHtml(input);
       expect(result).toBe(expected);
     });
 
     test("handles indented code blocks", () => {
       const input = "    const x = 1;\n    const y = 2;";
-      const expected = "<pre><code>const x = 1; const y = 2;</code></pre>";
+      const expected = "<pre><code>const x = 1;\nconst y = 2;\n</code></pre>";
       const result = parser.toHtml(input);
       expect(result).toBe(expected);
     });
@@ -266,7 +266,7 @@ describe("MarkdownParser", () => {
       const input =
         "# Header\n\nThis is **bold** and *italic* with [link](http://example.com)\n\n- List item with `code`\n- Another item\n\n```javascript\nconst x = 1;\n```";
       const expected =
-        '<h1>Header</h1><p>This is <strong>bold</strong> and <em>italic</em> with <a href="http://example.com">link</a></p><ul><li>List item with <code>code</code></li><li>Another item</li></ul><pre class="language-javascript"><code class="language-javascript"><span class="token keyword">const</span> x <span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">;</span></code></pre>';
+        '<h1>Header</h1><p>This is <strong>bold</strong> and <em>italic</em> with <a href="http://example.com">link</a></p><ul><li>List item with <code>code</code></li><li>Another item</li></ul><pre class="language-javascript"><code class="language-javascript"><span class="token keyword">const</span> x <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">;</span>\n</code></pre>';
       const result = parser.toHtml(input);
       expect(result).toBe(expected);
     });
@@ -636,14 +636,14 @@ describe("MarkdownParser", () => {
       expect(result).toContain('<code class="language-javascript">');
       expect(result).toContain("function");
       expect(result).toContain("console");
-      expect(result).toContain("&quot;Hello, World!");
+      expect(result).toContain('"Hello, World!');
       expect(result).toContain("</code></pre>");
 
       // Should contain syntax highlighting classes/spans
       expect(result).toContain('<span class="token keyword">function</span>');
       expect(result).toContain('<span class="token function">hello</span>');
       expect(result).toContain(
-        '<span class="token string">&quot;Hello, World!"</span>'
+        '<span class="token string">"Hello, World!"</span>'
       );
     });
 
@@ -822,7 +822,7 @@ describe("MarkdownParser", () => {
       // Should preserve the original code content (may be wrapped in spans)
       expect(result).toContain("const");
       expect(result).toContain("message");
-      expect(result).toContain("&quot;Hello, World!");
+      expect(result).toContain('"Hello, World!');
       expect(result).toContain("console");
       expect(result).toContain("log");
 
