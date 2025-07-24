@@ -1,4 +1,4 @@
-import type { MetaFunction, LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
+import type { MetaFunction, ActionFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import { useLoaderData, useActionData, Form } from "@remix-run/react";
 import { useState } from "react";
@@ -14,7 +14,7 @@ export const meta: MetaFunction = () => {
 };
 
 // Loader function to fetch todos from the API
-export async function loader(_args: LoaderFunctionArgs) {
+export async function loader() {
   try {
     const todos = await getTodos();
     return Response.json({ todos, error: null });
@@ -84,28 +84,33 @@ export default function Index() {
     todos?.find((todo: Todo) => todo?.id === id);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                MD-Todo
-              </h1>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                Markdown Todo Manager
+    <div className="py-6">
+      {/* Statistics Bar */}
+      <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-blue-800 dark:text-blue-200">
+              <span className="font-medium">Total: {todos?.length || 0}</span>
+            </div>
+            <div className="text-sm text-green-700 dark:text-green-300">
+              <span className="font-medium">
+                Completed: {todos?.filter(todo => todo.completed).length || 0}
               </span>
             </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              {todos?.length || 0} {(todos?.length || 0) === 1 ? 'todo' : 'todos'}
+            <div className="text-sm text-orange-700 dark:text-orange-300">
+              <span className="font-medium">
+                Pending: {todos?.filter(todo => !todo.completed).length || 0}
+              </span>
             </div>
           </div>
+          <div className="text-xs text-gray-600 dark:text-gray-400">
+            {(todos?.length || 0) === 0 
+              ? "No todos yet" 
+              : `${Math.round((todos?.filter(todo => todo.completed).length || 0) / (todos?.length || 1) * 100)}% complete`
+            }
+          </div>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      </div>
         {/* Error Display */}
         {(loadError || actionData?.error) && (
           <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800">
@@ -120,26 +125,26 @@ export default function Index() {
           </div>
         )}
 
-        {/* Todo List */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              Your Todos
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              {(todos?.length || 0) === 0 
-                ? "No todos yet. Create your first todo to get started!" 
-                : "Click on checkboxes to mark todos as complete, or use the delete button to remove them."
-              }
-            </p>
-          </div>
-
-          <TodoList
-            todos={todos || []}
-            onToggle={handleToggle}
-            onDelete={handleDelete}
-          />
+      {/* Todo List */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            Your Todos
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            {(todos?.length || 0) === 0 
+              ? "No todos yet. Create your first todo to get started!" 
+              : "Click on checkboxes to mark todos as complete, or use the delete button to remove them."
+            }
+          </p>
         </div>
+
+        <TodoList
+          todos={todos || []}
+          onToggle={handleToggle}
+          onDelete={handleDelete}
+        />
+      </div>
 
         {/* Hidden forms for actions */}
         {pendingToggle && (
@@ -179,19 +184,18 @@ export default function Index() {
           </Form>
         )}
 
-        {/* Create Todo Section - Placeholder for future implementation */}
-        <div className="mt-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-8 text-center">
-          <div className="text-gray-500 dark:text-gray-400">
-            <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <h3 className="text-lg font-medium mb-2">Create New Todo</h3>
-            <p className="text-sm">
-              Todo creation form will be implemented in the next phase.
-            </p>
-          </div>
+      {/* Create Todo Section - Placeholder for future implementation */}
+      <div className="mt-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-8 text-center">
+        <div className="text-gray-500 dark:text-gray-400">
+          <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          <h3 className="text-lg font-medium mb-2">Create New Todo</h3>
+          <p className="text-sm">
+            Todo creation form will be implemented in the next phase.
+          </p>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
