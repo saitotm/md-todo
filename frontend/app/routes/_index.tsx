@@ -248,7 +248,7 @@ export default function Index() {
             Create New Todo
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Add a new todo with markdown support for rich content formatting.
+            Add a new todo with markdown support for rich content formatting. Use the Preview tab to see how your markdown will be rendered.
           </p>
         </div>
 

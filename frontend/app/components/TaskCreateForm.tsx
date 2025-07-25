@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { TodoFormState } from '../lib/form-state';
 import type { TodoCreateData } from '../lib/types';
+import { MarkdownPreview } from './MarkdownPreview';
 
 export interface TaskCreateFormProps {
   onSubmit: (data: TodoCreateData) => void | Promise<void>;
@@ -20,6 +21,9 @@ export function TaskCreateForm({
   const [contentTouched, setContentTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [cursorPosition, setCursorPosition] = useState(0);
 
   // Validation
   const titleError = !title.trim() ? 'Title is required' : 
@@ -136,6 +140,28 @@ export function TaskCreateForm({
   // Use the actual errors and touched states
   const isTitleTouched = titleTouched;
   const isContentTouched = contentTouched;
+  
+  // Toggle preview mode
+  const handleTabChange = useCallback((mode: 'edit' | 'preview') => {
+    if (mode === 'edit' && isPreviewMode) {
+      setIsPreviewMode(false);
+      // Restore cursor position
+      setTimeout(() => {
+        if (contentTextareaRef.current) {
+          contentTextareaRef.current.focus();
+          contentTextareaRef.current.setSelectionRange(cursorPosition, cursorPosition);
+        }
+      }, 0);
+    } else if (mode === 'preview' && !isPreviewMode) {
+      // Save cursor position
+      if (contentTextareaRef.current) {
+        setCursorPosition(contentTextareaRef.current.selectionStart);
+      }
+      setIsPreviewMode(true);
+    }
+  }, [isPreviewMode, cursorPosition]);
+  
+  const showPreviewTab = content.trim() !== '';
 
   return (
     <form
@@ -176,13 +202,52 @@ export function TaskCreateForm({
 
       {/* Content Field */}
       <div>
-        <label htmlFor="content-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Content
-        </label>
-        <textarea
+        <div className="flex items-center justify-between mb-1">
+          <label htmlFor="content-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Content
+          </label>
+          {showPreviewTab && (
+            <div className="flex space-x-2" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={!isPreviewMode}
+                aria-controls="content-edit-panel"
+                onClick={() => handleTabChange('edit')}
+                className={`px-3 py-1 text-sm font-medium rounded-md ${
+                  !isPreviewMode
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                    : 'text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={isPreviewMode}
+                aria-controls="content-preview-panel"
+                onClick={() => handleTabChange('preview')}
+                className={`px-3 py-1 text-sm font-medium rounded-md ${
+                  isPreviewMode
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                    : 'text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
+              >
+                Preview
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="relative">
+          <textarea
           id="content-input"
+          ref={contentTextareaRef}
           rows={6}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+          className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white ${
+            isPreviewMode ? 'hidden' : ''
+          }`}
+          style={{ display: isPreviewMode ? 'none' : 'block' }}
           value={content}
           onChange={handleContentChange}
           onBlur={() => setContentTouched(true)}
@@ -191,6 +256,16 @@ export function TaskCreateForm({
           aria-describedby="content-help"
           aria-invalid={!!(contentError && isContentTouched)}
         />
+          {isPreviewMode && (
+            <div
+              id="content-preview-panel"
+              role="tabpanel"
+              className="w-full min-h-[152px] px-3 py-2 border border-gray-300 rounded-md bg-white dark:bg-gray-800 dark:border-gray-600"
+            >
+              <MarkdownPreview content={content} />
+            </div>
+          )}
+        </div>
         <div id="content-help" className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {contentError && isContentTouched ? (
             <span role="alert" className="text-red-600 dark:text-red-400">
