@@ -109,7 +109,7 @@ export function TaskEditForm({
   // Update TodoFormState with current values
   useEffect(() => {
     // Update form state instance with loaded todo if available
-    if (loadedTodo && todoFormState.current.initialValues.title !== loadedTodo.title) {
+    if (loadedTodo && todoFormState.current.values.title !== loadedTodo.title) {
       todoFormState.current.loadFromTodo(loadedTodo);
     }
     

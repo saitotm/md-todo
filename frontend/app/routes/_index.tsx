@@ -4,7 +4,6 @@ import { useLoaderData, useActionData, Form } from "@remix-run/react";
 import { useState } from "react";
 import { TodoList, FilterType, SortType } from "../components/TodoList";
 import { TaskCreateForm } from "../components/TaskCreateForm";
-import { TaskEditForm } from "../components/TaskEditForm";
 import {
   getTodos,
   updateTodo,
@@ -126,7 +125,6 @@ export default function Index() {
     id: string;
     data: TodoUpdateData;
   } | null>(null);
-  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
   const [sortBy, setSortBy] = useState<SortType>("created_at_desc");
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -152,24 +150,11 @@ export default function Index() {
     setShowCreateForm(false);
   };
 
-  const handleEdit = (id: string) => {
-    setEditingTodoId(id);
-    setShowCreateForm(false); // Close create form if open
+  const handleEdit = (todo: Todo, data: TodoUpdateData) => {
+    setPendingEdit({ id: todo.id, data });
+    // Form submission will trigger the action
   };
 
-  const handleEditSubmit = (data: TodoUpdateData) => {
-    if (editingTodoId) {
-      setPendingEdit({ id: editingTodoId, data });
-      // Form submission will trigger the action
-    }
-  };
-
-  const handleEditCancel = () => {
-    setEditingTodoId(null);
-  };
-
-  const currentTodo = (id: string): Todo | undefined =>
-    todos?.find((todo: Todo) => todo?.id === id);
 
   return (
     <div className="py-6">
@@ -279,7 +264,7 @@ export default function Index() {
           <input
             type="hidden"
             name="completed"
-            value={currentTodo(pendingToggle)?.completed ? "true" : "false"}
+            value={todos?.find((todo: Todo) => todo?.id === pendingToggle)?.completed ? "true" : "false"}
           />
           <button
             type="submit"
@@ -329,41 +314,13 @@ export default function Index() {
               if (button) {
                 button.click();
                 setPendingEdit(null);
-                setEditingTodoId(null);
               }
             }}
           />
         </Form>
       )}
 
-      {/* Edit Todo Section */}
-      {editingTodoId && (
-        <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              Edit Todo
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Modify your todo with markdown support for rich content
-              formatting. Use the Preview tab to see how your markdown will be
-              rendered.
-            </p>
-          </div>
-
-          <TaskEditForm
-            todo={currentTodo(editingTodoId)}
-            onSubmit={handleEditSubmit}
-            onCancel={handleEditCancel}
-            onLoadError={(error) => {
-              console.error("Failed to load todo for editing:", error);
-              setEditingTodoId(null);
-            }}
-          />
-        </div>
-      )}
-
       {/* Create Todo Section */}
-      {!editingTodoId && (
         <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
@@ -404,7 +361,6 @@ export default function Index() {
             />
           )}
         </div>
-      )}
     </div>
   );
 }

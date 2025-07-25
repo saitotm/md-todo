@@ -1,6 +1,7 @@
-import { useMemo } from "react";
-import { Todo } from "../lib/types";
+import { useMemo, useState } from "react";
+import { Todo, TodoUpdateData } from "../lib/types";
 import { MarkdownRenderer } from "./MarkdownRenderer";
+import { TaskEditForm } from "./TaskEditForm";
 
 export type FilterType = "all" | "completed" | "incomplete";
 export type SortType =
@@ -14,7 +15,7 @@ interface TodoListProps {
   todos: Todo[];
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
-  onEdit?: (id: string) => void;
+  onEdit?: (todo: Todo, data: TodoUpdateData) => void;
   filter?: FilterType;
   sortBy?: SortType;
   onFilterChange?: (filter: FilterType) => void;
@@ -31,6 +32,24 @@ export function TodoList({
   onFilterChange,
   onSortChange,
 }: TodoListProps) {
+  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+
+  const handleEditStart = (todoId: string) => {
+    setEditingTodoId(todoId);
+  };
+
+  const handleEditSubmit = (data: TodoUpdateData) => {
+    const todo = todos.find(t => t.id === editingTodoId);
+    if (todo && onEdit) {
+      onEdit(todo, data);
+    }
+    setEditingTodoId(null);
+  };
+
+  const handleEditCancel = () => {
+    setEditingTodoId(null);
+  };
+
   // Filter and sort todos
   const processedTodos = useMemo(() => {
     // Apply filtering
@@ -164,12 +183,27 @@ export function TodoList({
               data-testid={`todo-item-${todo.id}`}
               aria-labelledby={`todo-title-${todo.id}`}
               className={`
-              border rounded-lg p-4 md:p-6 bg-white dark:bg-gray-800 
+              border rounded-lg bg-white dark:bg-gray-800 
               border-gray-200 dark:border-gray-700 shadow-sm
               ${todo.completed ? "opacity-75" : ""}
+              ${editingTodoId === todo.id ? "ring-2 ring-blue-500" : ""}
             `}
             >
-              <div className="flex items-start gap-3">
+              {editingTodoId === todo.id ? (
+                <div className="p-4 md:p-6">
+                  <TaskEditForm
+                    todo={todo}
+                    onSubmit={handleEditSubmit}
+                    onCancel={handleEditCancel}
+                    onLoadError={(error) => {
+                      console.error("Failed to load todo for editing:", error);
+                      setEditingTodoId(null);
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="p-4 md:p-6">
+                  <div className="flex items-start gap-3">
                 {/* Completion checkbox */}
                 <div className="flex-shrink-0 mt-1">
                   <input
@@ -235,7 +269,7 @@ export function TodoList({
                     <button
                       type="button"
                       data-testid={`edit-button-${todo.id}`}
-                      onClick={() => onEdit(todo.id)}
+                      onClick={() => handleEditStart(todo.id)}
                       aria-label={`Edit "${todo.title}"`}
                       className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 
                              transition-colors duration-200 rounded-md hover:bg-gray-100 
@@ -286,7 +320,9 @@ export function TodoList({
                     </svg>
                   </button>
                 </div>
-              </div>
+                  </div>
+                </div>
+              )}
             </li>
           ))}
         </ul>
