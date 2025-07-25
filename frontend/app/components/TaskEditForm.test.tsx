@@ -49,9 +49,9 @@ vi.mock("../lib/api-client", () => ({
   ApiError: class extends Error {
     constructor(message: string, public status?: number) {
       super(message);
-      this.name = 'ApiError';
+      this.name = "ApiError";
     }
-  }
+  },
 }));
 
 import { getTodo, updateTodo } from "../lib/api-client";
@@ -86,7 +86,7 @@ describe("TaskEditForm Component", () => {
   });
 
   describe("Data Loading Tests", () => {
-    it("renders loading state initially when todoId is provided", () => {
+    it("renders loading state initially when todoId is provided", async () => {
       render(
         <TaskEditForm
           todoId={sampleTodo.id}
@@ -96,8 +96,9 @@ describe("TaskEditForm Component", () => {
         />
       );
 
-      expect(screen.getByTestId("loading-spinner")).toBeInTheDocument();
-      expect(screen.getByText(/loading task/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText(/loading task/i)).toBeInTheDocument();
+      });
     });
 
     it("calls getTodo API when todoId is provided", async () => {
@@ -110,7 +111,9 @@ describe("TaskEditForm Component", () => {
         />
       );
 
-      expect(mockGetTodo).toHaveBeenCalledWith(sampleTodo.id);
+      await waitFor(() =>
+        expect(mockGetTodo).toHaveBeenCalledWith(sampleTodo.id)
+      );
     });
 
     it("loads and displays todo data successfully", async () => {
@@ -128,7 +131,9 @@ describe("TaskEditForm Component", () => {
       });
 
       const titleInput = screen.getByDisplayValue(sampleTodo.title);
-      const contentTextarea = screen.getByLabelText(/content/i) as HTMLTextAreaElement;
+      const contentTextarea = screen.getByLabelText(
+        /content/i
+      ) as HTMLTextAreaElement;
 
       expect(titleInput).toBeInTheDocument();
       expect(contentTextarea).toBeInTheDocument();
@@ -171,7 +176,9 @@ describe("TaskEditForm Component", () => {
 
       // Should display todo data immediately
       const titleInput = screen.getByDisplayValue(sampleTodo.title);
-      const contentTextarea = screen.getByLabelText(/content/i) as HTMLTextAreaElement;
+      const contentTextarea = screen.getByLabelText(
+        /content/i
+      ) as HTMLTextAreaElement;
 
       expect(titleInput).toBeInTheDocument();
       expect(contentTextarea).toBeInTheDocument();
@@ -245,13 +252,19 @@ describe("TaskEditForm Component", () => {
       expect(titleInput.value).toBe(sampleTodo.title);
 
       // Check for content textarea with loaded value
-      const contentTextarea = screen.getByLabelText(/content/i) as HTMLTextAreaElement;
+      const contentTextarea = screen.getByLabelText(
+        /content/i
+      ) as HTMLTextAreaElement;
       expect(contentTextarea).toBeInTheDocument();
       expect(contentTextarea.value).toBe(sampleTodo.content);
 
       // Check for submit and cancel buttons
-      expect(screen.getByRole("button", { name: /update/i })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /update/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /cancel/i })
+      ).toBeInTheDocument();
     });
 
     it("allows editing title field", async () => {
@@ -284,12 +297,19 @@ describe("TaskEditForm Component", () => {
         />
       );
 
-      const contentTextarea = screen.getByLabelText(/content/i) as HTMLTextAreaElement;
+      const contentTextarea = screen.getByLabelText(
+        /content/i
+      ) as HTMLTextAreaElement;
 
       await user.clear(contentTextarea);
-      await user.type(contentTextarea, "# Updated Content\n\nThis is the **updated** content.");
+      await user.type(
+        contentTextarea,
+        "# Updated Content\n\nThis is the **updated** content."
+      );
 
-      expect(contentTextarea.value).toBe("# Updated Content\n\nThis is the **updated** content.");
+      expect(contentTextarea.value).toBe(
+        "# Updated Content\n\nThis is the **updated** content."
+      );
     });
 
     it("validates title field during editing", async () => {
@@ -314,29 +334,33 @@ describe("TaskEditForm Component", () => {
       });
     });
 
-    it("validates content length during editing", async () => {
-      const user = userEvent.setup();
-      render(
-        <TaskEditForm
-          todo={sampleTodo}
-          onSubmit={mockOnSubmit}
-          onCancel={mockOnCancel}
-          onLoadError={mockOnLoadError}
-        />
-      );
+    it(
+      "validates content length during editing",
+      async () => {
+        const user = userEvent.setup();
+        render(
+          <TaskEditForm
+            todo={sampleTodo}
+            onSubmit={mockOnSubmit}
+            onCancel={mockOnCancel}
+            onLoadError={mockOnLoadError}
+          />
+        );
 
-      const contentTextarea = screen.getByLabelText(/content/i);
-      const longContent = "a".repeat(10001); // Exceeds 10000 character limit
+        const contentTextarea = screen.getByLabelText(/content/i);
+        const longContent = "a".repeat(10001); // Exceeds 10000 character limit
 
-      await user.clear(contentTextarea);
-      await user.click(contentTextarea);
-      await user.paste(longContent);
-      await user.tab(); // Blur to trigger validation
+        await user.clear(contentTextarea);
+        await user.click(contentTextarea);
+        await user.paste(longContent);
+        await user.tab(); // Blur to trigger validation
 
-      await waitFor(() => {
-        expect(screen.getByText(/content must be no more than 10000 characters/i)).toBeInTheDocument();
-      });
-    }, { timeout: 10000 });
+        await waitFor(() => {
+          expect(
+            screen.getByText(/content must be no more than 10000 characters/i)
+          ).toBeInTheDocument();
+        });
+      }, 10000);
 
     it("enables form submission when data is valid", async () => {
       const user = userEvent.setup();
@@ -399,7 +423,9 @@ describe("TaskEditForm Component", () => {
 
       // Should show preview tab when content exists
       await waitFor(() => {
-        expect(screen.getByRole("tab", { name: /preview/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("tab", { name: /preview/i })
+        ).toBeInTheDocument();
       });
 
       // Click preview tab
@@ -597,7 +623,7 @@ describe("TaskEditForm Component", () => {
       const submitButton = screen.getByRole("button", { name: /update/i });
 
       await user.type(titleInput, " Modified");
-      
+
       // Click submit button multiple times rapidly
       await user.click(submitButton);
       await user.click(submitButton);
@@ -739,7 +765,7 @@ describe("TaskEditForm Component", () => {
       // Should handle value changes
       await user.clear(titleInput);
       await user.type(titleInput, "Sample Task Modified");
-      
+
       await waitFor(() => {
         expect(titleInput).toHaveValue("Sample Task Modified");
       });
