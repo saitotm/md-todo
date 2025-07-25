@@ -14,10 +14,8 @@ const originalWarn = console.warn;
 console.error = (...args: any[]) => {
   const message = args[0];
   if (typeof message === 'string') {
-    // Suppress React DOM nesting warnings
-    if (message.includes('validateDOMNesting') ||
-        message.includes('<html> cannot appear as a child of <div>') ||
-        message.includes('Warning: validateDOMNesting')) {
+    // Allow DOM nesting warnings to show for now - will address properly
+    if (false) {
       return;
     }
   }
@@ -27,11 +25,8 @@ console.error = (...args: any[]) => {
 console.warn = (...args: any[]) => {
   const message = args[0];
   if (typeof message === 'string') {
-    // Suppress React Router warnings and DOM nesting warnings
-    if (message.includes('React Router Future Flag Warning') ||
-        message.includes('validateDOMNesting') ||
-        message.includes('<html> cannot appear as a child of <div>') ||
-        message.includes('Warning: validateDOMNesting')) {
+    // Suppress React Router warnings only
+    if (message.includes('React Router Future Flag Warning')) {
       return;
     }
   }
