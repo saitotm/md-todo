@@ -1,59 +1,71 @@
-import { useMemo } from 'react';
-import { Todo } from '../lib/types';
-import { MarkdownRenderer } from './MarkdownRenderer';
+import { useMemo } from "react";
+import { Todo } from "../lib/types";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 
-export type FilterType = 'all' | 'completed' | 'incomplete';
-export type SortType = 'created_at_desc' | 'created_at_asc' | 'title_asc' | 'title_desc' | 'completed';
+export type FilterType = "all" | "completed" | "incomplete";
+export type SortType =
+  | "created_at_desc"
+  | "created_at_asc"
+  | "title_asc"
+  | "title_desc"
+  | "completed";
 
 interface TodoListProps {
   todos: Todo[];
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit?: (id: string) => void;
   filter?: FilterType;
   sortBy?: SortType;
   onFilterChange?: (filter: FilterType) => void;
   onSortChange?: (sortBy: SortType) => void;
 }
 
-export function TodoList({ 
-  todos, 
-  onToggle, 
-  onDelete, 
-  filter = 'all',
-  sortBy = 'created_at_desc',
+export function TodoList({
+  todos,
+  onToggle,
+  onDelete,
+  onEdit,
+  filter = "all",
+  sortBy = "created_at_desc",
   onFilterChange,
-  onSortChange
+  onSortChange,
 }: TodoListProps) {
-
   // Filter and sort todos
   const processedTodos = useMemo(() => {
     // Apply filtering
     let filteredTodos = todos;
-    if (filter === 'completed') {
-      filteredTodos = todos.filter(todo => todo.completed);
-    } else if (filter === 'incomplete') {
-      filteredTodos = todos.filter(todo => !todo.completed);
+    if (filter === "completed") {
+      filteredTodos = todos.filter((todo) => todo.completed);
+    } else if (filter === "incomplete") {
+      filteredTodos = todos.filter((todo) => !todo.completed);
     }
     // filter === 'all' shows all todos
 
     // Apply sorting
     const sortedTodos = [...filteredTodos].sort((a, b) => {
       switch (sortBy) {
-        case 'created_at_desc':
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        case 'created_at_asc':
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-        case 'title_asc':
+        case "created_at_desc":
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+        case "created_at_asc":
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        case "title_asc":
           return a.title.localeCompare(b.title);
-        case 'title_desc':
+        case "title_desc":
           return b.title.localeCompare(a.title);
-        case 'completed':
+        case "completed":
           // Incomplete tasks first, then completed
           if (a.completed !== b.completed) {
             return a.completed ? 1 : -1;
           }
           // If same completion status, sort by creation date (oldest first)
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
         default:
           return 0;
       }
@@ -65,8 +77,8 @@ export function TodoList({
   // Empty state for original todos
   if (todos.length === 0) {
     return (
-      <div 
-        data-testid="todo-list-container" 
+      <div
+        data-testid="todo-list-container"
         className="space-y-4 md:space-y-6 text-center py-12"
       >
         <div className="text-gray-500 dark:text-gray-400">
@@ -83,7 +95,10 @@ export function TodoList({
       <div className="flex flex-col sm:flex-row gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
         {/* Filter Control */}
         <div className="flex-1">
-          <label htmlFor="filter-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label
+            htmlFor="filter-select"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             Filter Tasks
           </label>
           <select
@@ -105,7 +120,10 @@ export function TodoList({
 
         {/* Sort Control */}
         <div className="flex-1">
-          <label htmlFor="sort-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label
+            htmlFor="sort-select"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
             Sort Tasks
           </label>
           <select
@@ -132,102 +150,143 @@ export function TodoList({
       {processedTodos.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-gray-500 dark:text-gray-400">
-            <h3 className="text-lg font-medium mb-2">No todos match your filter</h3>
+            <h3 className="text-lg font-medium mb-2">
+              No todos match your filter
+            </h3>
             <p>Try adjusting your filter or sort options.</p>
           </div>
         </div>
       ) : (
         <ul aria-label="Todo items">
           {processedTodos.map((todo) => (
-          <li 
-            key={todo.id}
-            data-testid={`todo-item-${todo.id}`}
-            aria-labelledby={`todo-title-${todo.id}`}
-            className={`
+            <li
+              key={todo.id}
+              data-testid={`todo-item-${todo.id}`}
+              aria-labelledby={`todo-title-${todo.id}`}
+              className={`
               border rounded-lg p-4 md:p-6 bg-white dark:bg-gray-800 
               border-gray-200 dark:border-gray-700 shadow-sm
-              ${todo.completed ? 'opacity-75' : ''}
+              ${todo.completed ? "opacity-75" : ""}
             `}
-          >
-            <div className="flex items-start gap-3">
-              {/* Completion checkbox */}
-              <div className="flex-shrink-0 mt-1">
-                <input
-                  type="checkbox"
-                  data-testid={`checkbox-${todo.id}`}
-                  checked={todo.completed}
-                  onChange={() => onToggle(todo.id)}
-                  aria-label={`Mark "${todo.title}" as ${todo.completed ? 'incomplete' : 'complete'}`}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded 
+            >
+              <div className="flex items-start gap-3">
+                {/* Completion checkbox */}
+                <div className="flex-shrink-0 mt-1">
+                  <input
+                    type="checkbox"
+                    data-testid={`checkbox-${todo.id}`}
+                    checked={todo.completed}
+                    onChange={() => onToggle(todo.id)}
+                    aria-label={`Mark "${todo.title}" as ${
+                      todo.completed ? "incomplete" : "complete"
+                    }`}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded 
                            focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 
                            focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                />
-              </div>
+                  />
+                </div>
 
-              {/* Todo content */}
-              <div className="flex-grow min-w-0">
-                {/* Title */}
-                <h3 
-                  id={`todo-title-${todo.id}`}
-                  data-testid={`todo-title-${todo.id}`}
-                  className={`
+                {/* Todo content */}
+                <div className="flex-grow min-w-0">
+                  {/* Title */}
+                  <h3
+                    id={`todo-title-${todo.id}`}
+                    data-testid={`todo-title-${todo.id}`}
+                    className={`
                     text-lg font-medium mb-2 text-gray-900 dark:text-gray-100
-                    ${todo.completed ? 'line-through text-gray-500 dark:text-gray-400' : ''}
+                    ${
+                      todo.completed
+                        ? "line-through text-gray-500 dark:text-gray-400"
+                        : ""
+                    }
                   `}
-                >
-                  {todo.title}
-                </h3>
+                  >
+                    {todo.title}
+                  </h3>
 
-                {/* Markdown content */}
-                {todo.content && (
-                  <MarkdownRenderer 
-                    content={todo.content}
-                    className="prose-headings:text-gray-900 dark:prose-headings:text-gray-100
+                  {/* Markdown content */}
+                  {todo.content && (
+                    <MarkdownRenderer
+                      content={todo.content}
+                      className="prose-headings:text-gray-900 dark:prose-headings:text-gray-100
                              prose-p:text-gray-700 dark:prose-p:text-gray-300
                              prose-a:text-blue-600 dark:prose-a:text-blue-400"
-                  />
-                )}
-
-                {/* Timestamps */}
-                <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                  <span>Created: {new Date(todo.created_at).toLocaleDateString()}</span>
-                  {todo.updated_at !== todo.created_at && (
-                    <span className="ml-4">
-                      Updated: {new Date(todo.updated_at).toLocaleDateString()}
-                    </span>
+                    />
                   )}
-                </div>
-              </div>
 
-              {/* Delete button */}
-              <div className="flex-shrink-0">
-                <button
-                  type="button"
-                  data-testid={`delete-button-${todo.id}`}
-                  onClick={() => onDelete(todo.id)}
-                  aria-label={`Delete "${todo.title}"`}
-                  className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 
+                  {/* Timestamps */}
+                  <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                    <span>
+                      Created: {new Date(todo.created_at).toLocaleDateString()}
+                    </span>
+                    {todo.updated_at !== todo.created_at && (
+                      <span className="ml-4">
+                        Updated:{" "}
+                        {new Date(todo.updated_at).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex-shrink-0 flex gap-1">
+                  {/* Edit button */}
+                  {onEdit && (
+                    <button
+                      type="button"
+                      data-testid={`edit-button-${todo.id}`}
+                      onClick={() => onEdit(todo.id)}
+                      aria-label={`Edit "${todo.title}"`}
+                      className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 
+                             transition-colors duration-200 rounded-md hover:bg-gray-100 
+                             dark:hover:bg-gray-700 focus:outline-none focus:ring-2 
+                             focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                    </button>
+                  )}
+
+                  {/* Delete button */}
+                  <button
+                    type="button"
+                    data-testid={`delete-button-${todo.id}`}
+                    onClick={() => onDelete(todo.id)}
+                    aria-label={`Delete "${todo.title}"`}
+                    className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 
                            transition-colors duration-200 rounded-md hover:bg-gray-100 
                            dark:hover:bg-gray-700 focus:outline-none focus:ring-2 
                            focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                >
-                  <svg 
-                    className="w-4 h-4" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth="2" 
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                </button>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
-            </div>
             </li>
           ))}
         </ul>
