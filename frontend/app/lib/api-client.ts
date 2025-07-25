@@ -93,6 +93,22 @@ export async function createTodo(data: TodoCreateData): Promise<Todo> {
   }
 }
 
+export async function getTodo(id: string): Promise<Todo> {
+  try {
+    return await apiRequest<Todo>(`/todos/${id}`, {
+      method: 'GET',
+    });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      if (error.message.includes('Network error')) {
+        throw new ApiError('Network error occurred while fetching todo');
+      }
+      throw new ApiError(`Failed to fetch todo: ${error.message}`, error.status);
+    }
+    throw new ApiError('Network error occurred while fetching todo');
+  }
+}
+
 export async function updateTodo(id: string, data: TodoUpdateData): Promise<Todo> {
   try {
     return await apiRequest<Todo>(`/todos/${id}`, {
