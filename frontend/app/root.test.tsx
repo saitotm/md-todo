@@ -28,9 +28,10 @@ describe("Root Layout Component", () => {
         </LayoutContent>
       );
 
-      // Confirm Layout component renders correctly with min-height
-      const container = screen.getByTestId("test-content").parentElement?.parentElement;
-      expect(container).toHaveClass("min-h-screen");
+      // Find the LayoutContent div (which has min-h-screen class)
+      const layoutContent = screen.getByTestId("test-content").closest('.min-h-screen');
+      expect(layoutContent).toBeInTheDocument();
+      expect(layoutContent).toHaveClass("min-h-screen");
     });
 
     it("renders basic layout structure", () => {
