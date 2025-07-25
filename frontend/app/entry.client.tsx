@@ -12,12 +12,7 @@ startTransition(() => {
   hydrateRoot(
     document,
     <StrictMode>
-      <RemixBrowser 
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      />
+      <RemixBrowser />
     </StrictMode>
   );
 });

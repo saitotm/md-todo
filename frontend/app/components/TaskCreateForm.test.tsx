@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { TaskCreateForm } from "./TaskCreateForm";
@@ -115,8 +115,7 @@ describe("TaskCreateForm Component", () => {
         <TaskCreateForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
       );
 
-      const form =
-        screen.getByRole("form") || screen.getByTestId("task-create-form");
+      const form = screen.getByTestId("task-create-form");
       expect(form).toHaveClass("space-y-4");
 
       const titleInput = screen.getByLabelText(/title/i);
@@ -545,8 +544,7 @@ describe("TaskCreateForm Component", () => {
         <TaskCreateForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
       );
 
-      const form =
-        screen.getByRole("form") || screen.getByTestId("task-create-form");
+      const form = screen.getByTestId("task-create-form");
       const titleInput = screen.getByLabelText(/title/i);
 
       await user.type(titleInput, "Test Title");

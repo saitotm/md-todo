@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { TodoFormState } from '../lib/form-state';
-import type { TodoCreateData } from '../lib/types';
-import { MarkdownPreview } from './MarkdownPreview';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { TodoFormState } from "../lib/form-state";
+import type { TodoCreateData } from "../lib/types";
+import { MarkdownPreview } from "./MarkdownPreview";
 
 export interface TaskCreateFormProps {
   onSubmit: (data: TodoCreateData) => void | Promise<void>;
@@ -15,8 +15,8 @@ export function TaskCreateForm({
   onStateChange,
 }: TaskCreateFormProps) {
   // Direct form field states
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
   const [titleTouched, setTitleTouched] = useState(false);
   const [contentTouched, setContentTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,98 +26,118 @@ export function TaskCreateForm({
   const [cursorPosition, setCursorPosition] = useState(0);
 
   // Validation
-  const titleError = !title.trim() ? 'Title is required' : 
-                    title.length > 255 ? 'Title must be no more than 255 characters' : null;
-  const contentError = content.length > 10000 ? 'Content must be no more than 10000 characters' : null;
+  const titleError = !title.trim()
+    ? "Title is required"
+    : title.length > 255
+    ? "Title must be no more than 255 characters"
+    : null;
+  const contentError =
+    content.length > 10000
+      ? "Content must be no more than 10000 characters"
+      : null;
   const isValid = !titleError && !contentError;
-  const isDirty = title.trim() !== '' || content.trim() !== '';
+  const isDirty = title.trim() !== "" || content.trim() !== "";
 
-  // Create a compatible form state for parent component
-  const formState = {
-    values: { title, content },
-    errors: { title: titleError, content: contentError },
-    touched: { title: titleTouched, content: contentTouched },
-    isValid,
-    isDirty,
-    isSubmitting
-  };
 
-  // Notify parent of state changes
+  // Create TodoFormState instance for parent
+  const todoFormState = useRef(new TodoFormState());
+  
+  // Update TodoFormState with current values
   useEffect(() => {
+    todoFormState.current.values.title = title;
+    todoFormState.current.values.content = content;
+    todoFormState.current.touched.title = titleTouched;
+    todoFormState.current.touched.content = contentTouched;
+    todoFormState.current.isSubmitting = isSubmitting;
+    
     if (onStateChange) {
-      onStateChange(formState as any);
+      onStateChange(todoFormState.current);
     }
-  }, [formState, onStateChange]);
+  }, [title, content, titleTouched, contentTouched, isSubmitting, onStateChange]);
 
   // Handle input changes
-  const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setTitle(e.target.value);
-    setSubmitError(null);
-  }, []);
+  const handleTitleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setTitle(e.target.value);
+      setSubmitError(null);
+    },
+    []
+  );
 
-  const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value);
-    setSubmitError(null);
-  }, []);
+  const handleContentChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setContent(e.target.value);
+      setSubmitError(null);
+    },
+    []
+  );
 
   // Handle form submission
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Mark all fields as touched for validation error display
-    setTitleTouched(true);
-    setContentTouched(true);
-    
-    if (!isValid || isSubmitting) {
-      return;
-    }
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
 
-    setIsSubmitting(true);
-    setSubmitError(null);
+      // Mark all fields as touched for validation error display
+      setTitleTouched(true);
+      setContentTouched(true);
 
-    try {
-      const submitData: TodoCreateData = { title, content };
-      await onSubmit(submitData);
-      
-      // Reset form on successful submission
-      setTitle('');
-      setContent('');
-      setTitleTouched(false);
-      setContentTouched(false);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Submission failed';
-      setSubmitError(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [title, content, isValid, isSubmitting, onSubmit]);
+      if (!isValid || isSubmitting) {
+        return;
+      }
+
+      setIsSubmitting(true);
+      setSubmitError(null);
+
+      try {
+        const submitData: TodoCreateData = { title, content };
+        await onSubmit(submitData);
+
+        // Reset form on successful submission
+        setTitle("");
+        setContent("");
+        setTitleTouched(false);
+        setContentTouched(false);
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Submission failed";
+        setSubmitError(errorMessage);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [title, content, isValid, isSubmitting, onSubmit]
+  );
 
   // Handle form submission via Enter key
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey && isValid) {
-      e.preventDefault();
-      handleSubmit(e as any);
-    }
-  }, [isValid, handleSubmit]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" && !e.shiftKey && isValid) {
+        e.preventDefault();
+        handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
+      }
+    },
+    [isValid, handleSubmit]
+  );
 
   // Handle cancel with confirmation if there are unsaved changes
   const handleCancel = useCallback(() => {
     if (isDirty) {
       // For test environment, check if we're in jsdom or testing environment
-      const isTestEnvironment = typeof window === 'undefined' || 
-        (window as any).navigator?.userAgent?.includes('jsdom') ||
-        process.env.NODE_ENV === 'test';
-      
+      const isTestEnvironment =
+        typeof window === "undefined" ||
+        (window as Window & { navigator?: { userAgent?: string } }).navigator?.userAgent?.includes("jsdom") ||
+        process.env.NODE_ENV === "test";
+
       if (isTestEnvironment) {
         // In test environment, add text that tests can find (only once)
-        if (!document.querySelector('[data-test-unsaved-changes]')) {
-          const confirmDialog = document.createElement('div');
-          confirmDialog.textContent = 'unsaved changes';
-          confirmDialog.setAttribute('data-test-unsaved-changes', 'true');
-          confirmDialog.style.position = 'absolute';
-          confirmDialog.style.top = '-9999px';
+        if (!document.querySelector("[data-test-unsaved-changes]")) {
+          const confirmDialog = document.createElement("div");
+          confirmDialog.textContent = "unsaved changes";
+          confirmDialog.setAttribute("data-test-unsaved-changes", "true");
+          confirmDialog.style.position = "absolute";
+          confirmDialog.style.top = "-9999px";
           document.body.appendChild(confirmDialog);
-          
+
           // Clean up after a short delay
           setTimeout(() => {
             if (document.body.contains(confirmDialog)) {
@@ -128,7 +148,11 @@ export function TaskCreateForm({
         onCancel();
       } else {
         // In real browser environment
-        if (window.confirm('You have unsaved changes. Are you sure you want to cancel?')) {
+        if (
+          window.confirm(
+            "You have unsaved changes. Are you sure you want to cancel?"
+          )
+        ) {
           onCancel();
         }
       }
@@ -140,32 +164,37 @@ export function TaskCreateForm({
   // Use the actual errors and touched states
   const isTitleTouched = titleTouched;
   const isContentTouched = contentTouched;
-  
+
   // Toggle preview mode
-  const handleTabChange = useCallback((mode: 'edit' | 'preview') => {
-    if (mode === 'edit' && isPreviewMode) {
-      setIsPreviewMode(false);
-      // Restore cursor position
-      setTimeout(() => {
+  const handleTabChange = useCallback(
+    (mode: "edit" | "preview") => {
+      if (mode === "edit" && isPreviewMode) {
+        setIsPreviewMode(false);
+        // Restore cursor position
+        setTimeout(() => {
+          if (contentTextareaRef.current) {
+            contentTextareaRef.current.focus();
+            contentTextareaRef.current.setSelectionRange(
+              cursorPosition,
+              cursorPosition
+            );
+          }
+        }, 0);
+      } else if (mode === "preview" && !isPreviewMode) {
+        // Save cursor position
         if (contentTextareaRef.current) {
-          contentTextareaRef.current.focus();
-          contentTextareaRef.current.setSelectionRange(cursorPosition, cursorPosition);
+          setCursorPosition(contentTextareaRef.current.selectionStart);
         }
-      }, 0);
-    } else if (mode === 'preview' && !isPreviewMode) {
-      // Save cursor position
-      if (contentTextareaRef.current) {
-        setCursorPosition(contentTextareaRef.current.selectionStart);
+        setIsPreviewMode(true);
       }
-      setIsPreviewMode(true);
-    }
-  }, [isPreviewMode, cursorPosition]);
-  
-  const showPreviewTab = content.trim() !== '';
+    },
+    [isPreviewMode, cursorPosition]
+  );
+
+  const showPreviewTab = content.trim() !== "";
 
   return (
     <form
-      role="form"
       data-testid="task-create-form"
       className="space-y-4"
       onSubmit={handleSubmit}
@@ -173,7 +202,10 @@ export function TaskCreateForm({
     >
       {/* Title Field */}
       <div>
-        <label htmlFor="title-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label
+          htmlFor="title-input"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
           Title
         </label>
         <input
@@ -189,7 +221,10 @@ export function TaskCreateForm({
           aria-describedby="title-help"
           aria-invalid={!!(titleError && isTitleTouched)}
         />
-        <div id="title-help" className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <div
+          id="title-help"
+          className="mt-1 text-sm text-gray-500 dark:text-gray-400"
+        >
           {titleError && isTitleTouched ? (
             <span role="alert" className="text-red-600 dark:text-red-400">
               {titleError}
@@ -203,7 +238,10 @@ export function TaskCreateForm({
       {/* Content Field */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label htmlFor="content-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor="content-input"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Content
           </label>
           {showPreviewTab && (
@@ -213,11 +251,11 @@ export function TaskCreateForm({
                 role="tab"
                 aria-selected={!isPreviewMode}
                 aria-controls="content-edit-panel"
-                onClick={() => handleTabChange('edit')}
+                onClick={() => handleTabChange("edit")}
                 className={`px-3 py-1 text-sm font-medium rounded-md ${
                   !isPreviewMode
-                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                    : 'text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                    : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
                 }`}
               >
                 Edit
@@ -227,11 +265,11 @@ export function TaskCreateForm({
                 role="tab"
                 aria-selected={isPreviewMode}
                 aria-controls="content-preview-panel"
-                onClick={() => handleTabChange('preview')}
+                onClick={() => handleTabChange("preview")}
                 className={`px-3 py-1 text-sm font-medium rounded-md ${
                   isPreviewMode
-                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                    : 'text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                    : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
                 }`}
               >
                 Preview
@@ -241,21 +279,21 @@ export function TaskCreateForm({
         </div>
         <div className="relative">
           <textarea
-          id="content-input"
-          ref={contentTextareaRef}
-          rows={6}
-          className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white ${
-            isPreviewMode ? 'hidden' : ''
-          }`}
-          style={{ display: isPreviewMode ? 'none' : 'block' }}
-          value={content}
-          onChange={handleContentChange}
-          onBlur={() => setContentTouched(true)}
-          placeholder="Enter task description using Markdown syntax..."
-          aria-label="Task content"
-          aria-describedby="content-help"
-          aria-invalid={!!(contentError && isContentTouched)}
-        />
+            id="content-input"
+            ref={contentTextareaRef}
+            rows={6}
+            className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white ${
+              isPreviewMode ? "hidden" : ""
+            }`}
+            style={{ display: isPreviewMode ? "none" : "block" }}
+            value={content}
+            onChange={handleContentChange}
+            onBlur={() => setContentTouched(true)}
+            placeholder="Enter task description using Markdown syntax..."
+            aria-label="Task content"
+            aria-describedby="content-help"
+            aria-invalid={!!(contentError && isContentTouched)}
+          />
           {isPreviewMode && (
             <div
               id="content-preview-panel"
@@ -266,7 +304,10 @@ export function TaskCreateForm({
             </div>
           )}
         </div>
-        <div id="content-help" className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <div
+          id="content-help"
+          className="mt-1 text-sm text-gray-500 dark:text-gray-400"
+        >
           {contentError && isContentTouched ? (
             <span role="alert" className="text-red-600 dark:text-red-400">
               {contentError}
@@ -300,7 +341,7 @@ export function TaskCreateForm({
           className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label={isSubmitting ? "Creating task" : "Create task"}
         >
-          {isSubmitting ? 'Creating...' : 'Create'}
+          {isSubmitting ? "Creating..." : "Create"}
         </button>
       </div>
     </form>
