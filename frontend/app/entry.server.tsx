@@ -52,6 +52,10 @@ function handleBotRequest(
         context={remixContext}
         url={request.url}
         abortDelay={ABORT_DELAY}
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
       />,
       {
         onAllReady() {
@@ -102,6 +106,10 @@ function handleBrowserRequest(
         context={remixContext}
         url={request.url}
         abortDelay={ABORT_DELAY}
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
       />,
       {
         onShellReady() {

@@ -11,7 +11,12 @@ describe("Root Layout Component", () => {
           path: "/",
           Component: () => <div data-testid="test-content">Test Content</div>,
         },
-      ]);
+      ], {
+        future: {
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        },
+      });
 
       render(<RemixStub />);
 
@@ -25,7 +30,12 @@ describe("Root Layout Component", () => {
           path: "/",
           Component: () => <div data-testid="test-content">Test Content</div>,
         },
-      ]);
+      ], {
+        future: {
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        },
+      });
 
       render(<RemixStub />);
 
@@ -39,7 +49,12 @@ describe("Root Layout Component", () => {
           path: "/",
           Component: () => <div data-testid="test-content">Test Content</div>,
         },
-      ]);
+      ], {
+        future: {
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        },
+      });
 
       render(<RemixStub />);
 

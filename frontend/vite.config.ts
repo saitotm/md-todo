@@ -17,6 +17,8 @@ export default defineConfig({
         v3_throwAbortReason: true,
         v3_singleFetch: true,
         v3_lazyRouteDiscovery: true,
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
       },
       ignoredRouteFiles: ["**/.*", "**/*.test.tsx", "**/*.test.ts", "**/*.spec.tsx", "**/*.spec.ts"],
     }),
@@ -24,5 +26,6 @@ export default defineConfig({
   ].filter(Boolean),
   test: {
     environment: "jsdom",
+    setupFiles: ["./test/setup.ts"],
   },
 });
