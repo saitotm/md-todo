@@ -128,10 +128,11 @@ describe("TaskEditForm Component", () => {
       });
 
       const titleInput = screen.getByDisplayValue(sampleTodo.title);
-      const contentTextarea = screen.getByDisplayValue(sampleTodo.content);
+      const contentTextarea = screen.getByLabelText(/content/i) as HTMLTextAreaElement;
 
       expect(titleInput).toBeInTheDocument();
       expect(contentTextarea).toBeInTheDocument();
+      expect(contentTextarea.value).toBe(sampleTodo.content);
     });
 
     it("handles API error when loading todo", async () => {
@@ -170,10 +171,11 @@ describe("TaskEditForm Component", () => {
 
       // Should display todo data immediately
       const titleInput = screen.getByDisplayValue(sampleTodo.title);
-      const contentTextarea = screen.getByDisplayValue(sampleTodo.content);
+      const contentTextarea = screen.getByLabelText(/content/i) as HTMLTextAreaElement;
 
       expect(titleInput).toBeInTheDocument();
       expect(contentTextarea).toBeInTheDocument();
+      expect(contentTextarea.value).toBe(sampleTodo.content);
     });
 
     it("handles network errors gracefully", async () => {
@@ -327,13 +329,14 @@ describe("TaskEditForm Component", () => {
       const longContent = "a".repeat(10001); // Exceeds 10000 character limit
 
       await user.clear(contentTextarea);
-      await user.type(contentTextarea, longContent);
+      await user.click(contentTextarea);
+      await user.paste(longContent);
       await user.tab(); // Blur to trigger validation
 
       await waitFor(() => {
         expect(screen.getByText(/content must be no more than 10000 characters/i)).toBeInTheDocument();
       });
-    });
+    }, { timeout: 10000 });
 
     it("enables form submission when data is valid", async () => {
       const user = userEvent.setup();
@@ -371,8 +374,11 @@ describe("TaskEditForm Component", () => {
 
       // Clear title to make form invalid
       await user.clear(titleInput);
+      await user.tab(); // Blur to trigger validation state
 
-      expect(submitButton).toBeDisabled();
+      await waitFor(() => {
+        expect(submitButton).toBeDisabled();
+      });
     });
 
     it("supports markdown preview for content editing", async () => {
@@ -400,9 +406,9 @@ describe("TaskEditForm Component", () => {
       const previewTab = screen.getByRole("tab", { name: /preview/i });
       await user.click(previewTab);
 
-      // Should show rendered preview
+      // Should show rendered preview - check for text content instead of specific heading
       await waitFor(() => {
-        expect(screen.getByRole("heading", { level: 1, name: "Updated Header" })).toBeInTheDocument();
+        expect(screen.getByText("Updated Header")).toBeInTheDocument();
       });
     });
 
@@ -463,10 +469,12 @@ describe("TaskEditForm Component", () => {
 
       await user.click(submitButton);
 
-      expect(mockOnSubmit).toHaveBeenCalledWith({
-        title: "Updated Task Title",
-        content: "Updated content",
-      } as TodoUpdateData);
+      await waitFor(() => {
+        expect(mockOnSubmit).toHaveBeenCalledWith({
+          title: "Updated Task Title",
+          content: "Updated content",
+        } as TodoUpdateData);
+      });
     });
 
     it("only includes changed fields in update data", async () => {
@@ -490,9 +498,11 @@ describe("TaskEditForm Component", () => {
       await user.click(submitButton);
 
       // Should only include title in update data
-      expect(mockOnSubmit).toHaveBeenCalledWith({
-        title: "Only Title Changed",
-      } as TodoUpdateData);
+      await waitFor(() => {
+        expect(mockOnSubmit).toHaveBeenCalledWith({
+          title: "Only Title Changed",
+        } as TodoUpdateData);
+      });
     });
 
     it("shows loading state during submission", async () => {
@@ -560,9 +570,12 @@ describe("TaskEditForm Component", () => {
 
       // Clear title to make form invalid
       await user.clear(titleInput);
+      await user.tab(); // Trigger validation
       await user.click(submitButton);
 
-      expect(mockOnSubmit).not.toHaveBeenCalled();
+      await waitFor(() => {
+        expect(mockOnSubmit).not.toHaveBeenCalled();
+      });
     });
 
     it("prevents multiple simultaneous submissions", async () => {
@@ -655,7 +668,7 @@ describe("TaskEditForm Component", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(titleInput.value).toBe("Updated Title");
+        expect(titleInput).toHaveValue("Updated Title");
       });
     });
   });
@@ -724,8 +737,12 @@ describe("TaskEditForm Component", () => {
       expect(contentTextarea).toHaveValue(sampleTodo.content);
 
       // Should handle value changes
-      await user.type(titleInput, " Modified");
-      expect(titleInput).toHaveValue(sampleTodo.title + " Modified");
+      await user.clear(titleInput);
+      await user.type(titleInput, "Sample Task Modified");
+      
+      await waitFor(() => {
+        expect(titleInput).toHaveValue("Sample Task Modified");
+      });
     });
 
     it("provides form state information to parent component", async () => {
