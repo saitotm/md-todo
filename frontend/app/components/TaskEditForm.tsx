@@ -323,6 +323,7 @@ export function TaskEditForm({
               <button
                 type="button"
                 role="tab"
+                tabIndex={-1}
                 aria-selected={!isPreviewMode}
                 aria-controls="content-edit-panel"
                 onClick={() => handleTabChange("edit")}
@@ -337,6 +338,7 @@ export function TaskEditForm({
               <button
                 type="button"
                 role="tab"
+                tabIndex={-1}
                 aria-selected={isPreviewMode}
                 aria-controls="content-preview-panel"
                 onClick={() => handleTabChange("preview")}
