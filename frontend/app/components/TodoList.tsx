@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Todo } from '../lib/types';
-import { MarkdownParser } from '../lib/markdown-parser';
+import { MarkdownRenderer } from './MarkdownRenderer';
 
 export type FilterType = 'all' | 'completed' | 'incomplete';
 export type SortType = 'created_at_desc' | 'created_at_asc' | 'title_asc' | 'title_desc' | 'completed';
@@ -24,7 +24,6 @@ export function TodoList({
   onFilterChange,
   onSortChange
 }: TodoListProps) {
-  const markdownParser = new MarkdownParser();
 
   // Filter and sort todos
   const processedTodos = useMemo(() => {
@@ -181,14 +180,11 @@ export function TodoList({
 
                 {/* Markdown content */}
                 {todo.content && (
-                  <div 
-                    className="prose prose-sm max-w-none dark:prose-invert
-                             prose-headings:text-gray-900 dark:prose-headings:text-gray-100
+                  <MarkdownRenderer 
+                    content={todo.content}
+                    className="prose-headings:text-gray-900 dark:prose-headings:text-gray-100
                              prose-p:text-gray-700 dark:prose-p:text-gray-300
                              prose-a:text-blue-600 dark:prose-a:text-blue-400"
-                    dangerouslySetInnerHTML={{
-                      __html: markdownParser.toHtml(todo.content)
-                    }}
                   />
                 )}
 

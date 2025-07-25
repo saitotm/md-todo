@@ -24,5 +24,6 @@ export default defineConfig({
   ].filter(Boolean),
   test: {
     environment: "jsdom",
+    setupFiles: ["./test/setup.ts"],
   },
 });

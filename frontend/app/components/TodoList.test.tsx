@@ -381,8 +381,8 @@ describe('TodoList Component', () => {
   describe('Error Handling', () => {
     it('handles todos with missing or invalid data gracefully', () => {
       const invalidTodos = [
-        createMockTodo({ title: '' }), // Empty title
-        createMockTodo({ content: '' }), // Empty content
+        createMockTodo({ id: '018c2e65-4b7f-7000-8000-000000000100', title: '' }), // Empty title
+        createMockTodo({ id: '018c2e65-4b7f-7000-8000-000000000101', content: '' }), // Empty content
         createMockTodo({ id: 'invalid-id' }) // Invalid ID format
       ];
 

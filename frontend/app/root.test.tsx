@@ -1,63 +1,52 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, beforeEach } from "vitest";
-import { createRemixStub } from "@remix-run/testing";
-import App from "./root";
+import { Layout as AppLayout } from "./components/Layout";
 
 describe("Root Layout Component", () => {
-  describe("Basic Layout Structure", () => {
-    it("renders HTML structure with correct lang attribute", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: () => <div data-testid="test-content">Test Content</div>,
-        },
-      ]);
-
-      render(<RemixStub />);
+  describe("Inner Layout Structure (without HTML wrapper)", () => {
+    it("renders AppLayout correctly", () => {
+      render(
+        <AppLayout>
+          <div data-testid="test-content">Test Content</div>
+        </AppLayout>
+      );
 
       // Confirm Layout component renders correctly
       expect(screen.getByTestId("test-content")).toBeInTheDocument();
+      expect(screen.getByTestId("app-container")).toBeInTheDocument();
     });
 
-    it("includes proper meta viewport for responsive design", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: () => <div data-testid="test-content">Test Content</div>,
-        },
-      ]);
+    it("includes responsive design support in AppLayout", () => {
+      render(
+        <AppLayout>
+          <div data-testid="test-content">Test Content</div>
+        </AppLayout>
+      );
 
-      render(<RemixStub />);
-
-      // Confirm Layout component renders correctly
-      expect(screen.getByTestId("test-content")).toBeInTheDocument();
+      // Check for responsive classes in AppLayout
+      const layoutContainer = screen.getByTestId("layout-container");
+      expect(layoutContainer).toHaveClass("min-h-screen");
     });
 
-    it("includes charset meta tag", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: () => <div data-testid="test-content">Test Content</div>,
-        },
-      ]);
-
-      render(<RemixStub />);
+    it("renders basic layout structure without HTML wrapper", () => {
+      render(
+        <AppLayout>
+          <div data-testid="test-content">Test Content</div>
+        </AppLayout>
+      );
 
       // Confirm Layout component renders correctly
       expect(screen.getByTestId("test-content")).toBeInTheDocument();
     });
   });
 
-  describe("Application Header", () => {
+  describe("Application Header (AppLayout)", () => {
     it("renders application header with title", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: App,
-        },
-      ]);
-
-      render(<RemixStub />);
+      render(
+        <AppLayout>
+          <div>Test content</div>
+        </AppLayout>
+      );
 
       // Confirm application header title is displayed
       expect(screen.getByRole("banner")).toBeInTheDocument();
@@ -65,28 +54,22 @@ describe("Root Layout Component", () => {
     });
 
     it("renders navigation menu", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: App,
-        },
-      ]);
-
-      render(<RemixStub />);
+      render(
+        <AppLayout>
+          <div>Test content</div>
+        </AppLayout>
+      );
 
       // Confirm navigation menu is displayed
       expect(screen.getByRole("navigation")).toBeInTheDocument();
     });
 
     it("renders logo image with proper alt text", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: App,
-        },
-      ]);
-
-      render(<RemixStub />);
+      render(
+        <AppLayout>
+          <div>Test content</div>
+        </AppLayout>
+      );
 
       // Confirm logo image displays with proper alt attribute
       expect(screen.getByAltText("MD-Todo Logo")).toBeInTheDocument();
@@ -95,28 +78,22 @@ describe("Root Layout Component", () => {
 
   describe("Main Content Area", () => {
     it("renders main content area with proper semantic markup", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: App,
-        },
-      ]);
-
-      render(<RemixStub />);
+      render(
+        <AppLayout>
+          <div>Test content</div>
+        </AppLayout>
+      );
 
       // Confirm main content area is displayed with main tag
       expect(screen.getByRole("main")).toBeInTheDocument();
     });
 
     it("renders child components within main content area", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: App,
-        },
-      ]);
-
-      render(<RemixStub />);
+      render(
+        <AppLayout>
+          <div>Test content</div>
+        </AppLayout>
+      );
 
       // Confirm main area exists and contains outlet content
       const mainElement = screen.getByRole("main");
@@ -126,28 +103,22 @@ describe("Root Layout Component", () => {
 
   describe("Footer", () => {
     it("renders application footer", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: App,
-        },
-      ]);
-
-      render(<RemixStub />);
+      render(
+        <AppLayout>
+          <div>Test content</div>
+        </AppLayout>
+      );
 
       // Confirm footer is displayed
       expect(screen.getByRole("contentinfo")).toBeInTheDocument();
     });
 
     it("displays copyright information in footer", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: App,
-        },
-      ]);
-
-      render(<RemixStub />);
+      render(
+        <AppLayout>
+          <div>Test content</div>
+        </AppLayout>
+      );
 
       // Confirm copyright information is displayed in footer
       expect(screen.getByText(/© 2025 MD-Todo/)).toBeInTheDocument();
@@ -170,14 +141,11 @@ describe("Root Layout Component", () => {
     });
 
     it("applies responsive container classes", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: App,
-        },
-      ]);
-
-      render(<RemixStub />);
+      render(
+        <AppLayout>
+          <div>Test content</div>
+        </AppLayout>
+      );
 
       // Confirm responsive container classes are applied
       const container = screen.getByTestId("app-container");
@@ -192,14 +160,11 @@ describe("Root Layout Component", () => {
         value: 375,
       });
 
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: App,
-        },
-      ]);
-
-      render(<RemixStub />);
+      render(
+        <AppLayout>
+          <div>Test content</div>
+        </AppLayout>
+      );
 
       // Confirm mobile navigation is displayed
       expect(screen.getByTestId("mobile-menu-button")).toBeInTheDocument();
@@ -213,14 +178,11 @@ describe("Root Layout Component", () => {
         value: 1200,
       });
 
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: App,
-        },
-      ]);
-
-      render(<RemixStub />);
+      render(
+        <AppLayout>
+          <div>Test content</div>
+        </AppLayout>
+      );
 
       // Confirm mobile menu button has hidden class applied on desktop
       const mobileButton = screen.getByTestId("mobile-menu-button");
@@ -228,14 +190,11 @@ describe("Root Layout Component", () => {
     });
 
     it("applies appropriate grid layout for different screen sizes", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: App,
-        },
-      ]);
-
-      render(<RemixStub />);
+      render(
+        <AppLayout>
+          <div>Test content</div>
+        </AppLayout>
+      );
 
       // Confirm responsive grid classes are applied
       const gridContainer = screen.getByTestId("layout-grid");
@@ -249,42 +208,33 @@ describe("Root Layout Component", () => {
 
   describe("Accessibility", () => {
     it("includes skip to main content link", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: App,
-        },
-      ]);
-
-      render(<RemixStub />);
+      render(
+        <AppLayout>
+          <div>Test content</div>
+        </AppLayout>
+      );
 
       // Confirm skip link to main content exists
       expect(screen.getByText("Skip to main content")).toBeInTheDocument();
     });
 
     it("has proper heading hierarchy", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: App,
-        },
-      ]);
-
-      render(<RemixStub />);
+      render(
+        <AppLayout>
+          <div>Test content</div>
+        </AppLayout>
+      );
 
       // Confirm h1 tag exists (for SEO and accessibility)
       expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
     });
 
     it("provides aria-label for navigation", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: App,
-        },
-      ]);
-
-      render(<RemixStub />);
+      render(
+        <AppLayout>
+          <div>Test content</div>
+        </AppLayout>
+      );
 
       // Confirm navigation has appropriate aria-label
       const navigation = screen.getByRole("navigation");
@@ -294,14 +244,11 @@ describe("Root Layout Component", () => {
 
   describe("Theme Support", () => {
     it("supports dark mode toggle", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: App,
-        },
-      ]);
-
-      render(<RemixStub />);
+      render(
+        <AppLayout>
+          <div>Test content</div>
+        </AppLayout>
+      );
 
       // Confirm dark mode toggle button exists
       expect(
@@ -310,14 +257,11 @@ describe("Root Layout Component", () => {
     });
 
     it("applies theme classes to body element", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: App,
-        },
-      ]);
-
-      render(<RemixStub />);
+      render(
+        <AppLayout>
+          <div>Test content</div>
+        </AppLayout>
+      );
 
       // Confirm Layout component renders correctly
       expect(

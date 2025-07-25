@@ -33,7 +33,12 @@ describe('Index Route Tests', () => {
           Component: IndexRoute,
           loader: () => Response.json({ todos: [], error: null })
         }
-      ]);
+      ], {
+        future: {
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        },
+      });
 
       render(<RemixStub />);
       
@@ -49,7 +54,12 @@ describe('Index Route Tests', () => {
           Component: IndexRoute,
           loader: () => Response.json({ todos: mockTodos, error: null })
         }
-      ]);
+      ], {
+        future: {
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        },
+      });
 
       render(<RemixStub />);
       
@@ -68,7 +78,12 @@ describe('Index Route Tests', () => {
           Component: IndexRoute,
           loader: () => Response.json({ todos: [], error: 'Failed to load todos' })
         }
-      ]);
+      ], {
+        future: {
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        },
+      });
 
       render(<RemixStub />);
       
@@ -83,7 +98,12 @@ describe('Index Route Tests', () => {
           Component: IndexRoute,
           loader: () => Response.json({ todos: [], error: null })
         }
-      ]);
+      ], {
+        future: {
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        },
+      });
 
       render(<RemixStub />);
       
