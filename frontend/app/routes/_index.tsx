@@ -3,8 +3,9 @@ import { redirect } from "@remix-run/node";
 import { useLoaderData, useActionData, Form } from "@remix-run/react";
 import { useState } from "react";
 import { TodoList, FilterType, SortType } from "../components/TodoList";
-import { getTodos, updateTodo, deleteTodo } from "../lib/api-client";
-import { Todo } from "../lib/types";
+import { TaskCreateForm } from "../components/TaskCreateForm";
+import { getTodos, updateTodo, deleteTodo, createTodo } from "../lib/api-client";
+import { Todo, TodoCreateData } from "../lib/types";
 
 export const meta: MetaFunction = () => {
   return [
@@ -32,21 +33,42 @@ export async function loader() {
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
-  const todoId = formData.get("todoId");
-
-  if (!todoId || typeof todoId !== "string") {
-    return Response.json({ error: "Invalid todo ID" }, { status: 400 });
-  }
 
   try {
     switch (intent) {
+      case "create": {
+        const title = formData.get("title");
+        const content = formData.get("content");
+
+        if (!title || typeof title !== "string") {
+          return Response.json({ error: "Title is required" }, { status: 400 });
+        }
+        if (typeof content !== "string") {
+          return Response.json({ error: "Invalid content" }, { status: 400 });
+        }
+
+        const todoData: TodoCreateData = { title, content };
+        await createTodo(todoData);
+        return redirect("/"); // Refresh the page to show updated data
+      }
+
       case "toggle": {
+        const todoId = formData.get("todoId");
+        if (!todoId || typeof todoId !== "string") {
+          return Response.json({ error: "Invalid todo ID" }, { status: 400 });
+        }
+
         const completed = formData.get("completed") === "true";
         await updateTodo(todoId, { completed: !completed });
         return redirect("/"); // Refresh the page to show updated data
       }
       
       case "delete": {
+        const todoId = formData.get("todoId");
+        if (!todoId || typeof todoId !== "string") {
+          return Response.json({ error: "Invalid todo ID" }, { status: 400 });
+        }
+
         await deleteTodo(todoId);
         return redirect("/"); // Refresh the page to show updated data
       }
@@ -67,8 +89,10 @@ export default function Index() {
   const actionData = useActionData<typeof action>();
   const [pendingToggle, setPendingToggle] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [pendingCreate, setPendingCreate] = useState<TodoCreateData | null>(null);
   const [filter, setFilter] = useState<FilterType>('all');
   const [sortBy, setSortBy] = useState<SortType>('created_at_desc');
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   const handleToggle = (id: string) => {
     setPendingToggle(id);
@@ -80,6 +104,15 @@ export default function Index() {
       setPendingDelete(id);
       // Form submission will trigger the action
     }
+  };
+
+  const handleCreateSubmit = (data: TodoCreateData) => {
+    setPendingCreate(data);
+    // Form submission will trigger the action
+  };
+
+  const handleCreateCancel = () => {
+    setShowCreateForm(false);
   };
 
   const currentTodo = (id: string): Todo | undefined => 
@@ -153,6 +186,24 @@ export default function Index() {
       </div>
 
         {/* Hidden forms for actions */}
+        {pendingCreate && (
+          <Form method="post" className="hidden">
+            <input type="hidden" name="intent" value="create" />
+            <input type="hidden" name="title" value={pendingCreate.title} />
+            <input type="hidden" name="content" value={pendingCreate.content} />
+            <button 
+              type="submit" 
+              ref={(button) => {
+                if (button) {
+                  button.click();
+                  setPendingCreate(null);
+                  setShowCreateForm(false);
+                }
+              }}
+            />
+          </Form>
+        )}
+
         {pendingToggle && (
           <Form method="post" className="hidden">
             <input type="hidden" name="intent" value="toggle" />
@@ -190,17 +241,35 @@ export default function Index() {
           </Form>
         )}
 
-      {/* Create Todo Section - Placeholder for future implementation */}
-      <div className="mt-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-8 text-center">
-        <div className="text-gray-500 dark:text-gray-400">
-          <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          <h3 className="text-lg font-medium mb-2">Create New Todo</h3>
-          <p className="text-sm">
-            Todo creation form will be implemented in the next phase.
+      {/* Create Todo Section */}
+      <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            Create New Todo
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Add a new todo with markdown support for rich content formatting.
           </p>
         </div>
+
+        {!showCreateForm ? (
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="w-full p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+          >
+            <div className="flex items-center justify-center gap-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              <span className="font-medium">Add New Todo</span>
+            </div>
+          </button>
+        ) : (
+          <TaskCreateForm
+            onSubmit={handleCreateSubmit}
+            onCancel={handleCreateCancel}
+          />
+        )}
       </div>
     </div>
   );
