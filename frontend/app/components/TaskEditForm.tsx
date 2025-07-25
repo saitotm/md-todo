@@ -33,6 +33,7 @@ export function TaskEditForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [isRealtimePreview, setIsRealtimePreview] = useState(false);
   const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [cursorPosition, setCursorPosition] = useState(0);
 
@@ -256,7 +257,19 @@ export function TaskEditForm({
     [isPreviewMode, cursorPosition]
   );
 
-  const showPreviewTab = content.trim() !== "";
+  // Toggle realtime preview mode
+  const handleRealtimePreviewToggle = useCallback(() => {
+    setIsRealtimePreview(prev => {
+      const newState = !prev;
+      if (newState) {
+        // Disable tab mode when enabling realtime
+        setIsPreviewMode(false);
+      }
+      return newState;
+    });
+  }, []);
+
+  const showPreviewTab = content.trim() !== "" && !isRealtimePreview;
 
   // Show loading state
   if (isLoading) {
@@ -318,68 +331,116 @@ export function TaskEditForm({
           >
             Content
           </label>
-          {showPreviewTab && (
-            <div className="flex space-x-2" role="tablist">
+          <div className="flex items-center space-x-2">
+            {content.trim() !== "" && (
               <button
                 type="button"
-                role="tab"
-                tabIndex={-1}
-                aria-selected={!isPreviewMode}
-                aria-controls="content-edit-panel"
-                onClick={() => handleTabChange("edit")}
-                className={`px-3 py-1 text-sm font-medium rounded-md ${
-                  !isPreviewMode
-                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                    : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-                }`}
+                onClick={handleRealtimePreviewToggle}
+                className="px-3 py-1 text-xs font-medium text-purple-700 bg-purple-100 rounded-md hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-300 dark:hover:bg-purple-800"
+                aria-label={isRealtimePreview ? "Disable real-time preview" : "Enable real-time preview"}
               >
+                {isRealtimePreview ? "Disable Real-time Preview" : "Enable Real-time Preview"}
+              </button>
+            )}
+            {showPreviewTab && (
+              <div className="flex space-x-2" role="tablist">
+                <button
+                  type="button"
+                  role="tab"
+                  tabIndex={-1}
+                  aria-selected={!isPreviewMode}
+                  aria-controls="content-edit-panel"
+                  onClick={() => handleTabChange("edit")}
+                  className={`px-3 py-1 text-sm font-medium rounded-md ${
+                    !isPreviewMode
+                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                      : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                  }`}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  tabIndex={-1}
+                  aria-selected={isPreviewMode}
+                  aria-controls="content-preview-panel"
+                  onClick={() => handleTabChange("preview")}
+                  className={`px-3 py-1 text-sm font-medium rounded-md ${
+                    isPreviewMode
+                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                      : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                  }`}
+                >
+                  Preview
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        {isRealtimePreview ? (
+          // Real-time preview mode: side-by-side layout
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="content-input" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                 Edit
-              </button>
-              <button
-                type="button"
-                role="tab"
-                tabIndex={-1}
-                aria-selected={isPreviewMode}
-                aria-controls="content-preview-panel"
-                onClick={() => handleTabChange("preview")}
-                className={`px-3 py-1 text-sm font-medium rounded-md ${
-                  isPreviewMode
-                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                    : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-                }`}
-              >
+              </label>
+              <textarea
+                id="content-input"
+                ref={contentTextareaRef}
+                rows={6}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                value={content}
+                onChange={handleContentChange}
+                onBlur={() => setContentTouched(true)}
+                placeholder="Enter task description using Markdown syntax..."
+                aria-label="Task content"
+                aria-describedby="content-help"
+                aria-invalid={!!(contentError && isContentTouched)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                 Preview
-              </button>
+              </label>
+              <div
+                data-testid="realtime-preview-panel"
+                className="w-full min-h-[152px] px-3 py-2 border border-gray-300 rounded-md bg-white dark:bg-gray-800 dark:border-gray-600 overflow-auto"
+              >
+                <MarkdownPreview content={content} />
+              </div>
             </div>
-          )}
-        </div>
-        <div className="relative">
-          <textarea
-            id="content-input"
-            ref={contentTextareaRef}
-            rows={6}
-            className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white ${
-              isPreviewMode ? "hidden" : ""
-            }`}
-            style={{ display: isPreviewMode ? "none" : "block" }}
-            value={content}
-            onChange={handleContentChange}
-            onBlur={() => setContentTouched(true)}
-            placeholder="Enter task description using Markdown syntax..."
-            aria-label="Task content"
-            aria-describedby="content-help"
-            aria-invalid={!!(contentError && isContentTouched)}
-          />
-          {isPreviewMode && (
-            <div
-              id="content-preview-panel"
-              role="tabpanel"
-              className="w-full min-h-[152px] px-3 py-2 border border-gray-300 rounded-md bg-white dark:bg-gray-800 dark:border-gray-600"
-            >
-              <MarkdownPreview content={content} />
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          // Tab mode: traditional layout
+          <div className="relative">
+            <textarea
+              id="content-input"
+              ref={contentTextareaRef}
+              rows={6}
+              className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white ${
+                isPreviewMode ? "hidden" : ""
+              }`}
+              style={{ display: isPreviewMode ? "none" : "block" }}
+              value={content}
+              onChange={handleContentChange}
+              onBlur={() => setContentTouched(true)}
+              placeholder="Enter task description using Markdown syntax..."
+              aria-label="Task content"
+              aria-describedby="content-help"
+              aria-invalid={!!(contentError && isContentTouched)}
+            />
+            {isPreviewMode && (
+              <div
+                id="content-preview-panel"
+                role="tabpanel"
+                className="w-full min-h-[152px] px-3 py-2 border border-gray-300 rounded-md bg-white dark:bg-gray-800 dark:border-gray-600"
+              >
+                <MarkdownPreview content={content} />
+              </div>
+            )}
+          </div>
+        )}
         <div
           id="content-help"
           className="mt-1 text-sm text-gray-500 dark:text-gray-400"

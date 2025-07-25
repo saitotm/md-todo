@@ -619,6 +619,161 @@ describe("TaskCreateForm Component", () => {
   });
 
   describe("Markdown Preview", () => {
+    describe("Real-time Preview Tests (Task 6.5)", () => {
+      it("shows real-time preview panel when realtime mode is enabled", async () => {
+        const user = userEvent.setup();
+        render(
+          <TaskCreateForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+        );
+
+        const contentTextarea = screen.getByLabelText(/content/i);
+
+        // Enter content
+        await user.click(contentTextarea);
+        await user.type(contentTextarea, "# Hello World");
+
+        // Should show realtime preview toggle button
+        await waitFor(() => {
+          expect(
+            screen.getByRole("button", { name: /enable real.*time preview/i })
+          ).toBeInTheDocument();
+        });
+
+        // Click realtime preview toggle
+        const realtimeToggle = screen.getByRole("button", { name: /enable real.*time preview/i });
+        await user.click(realtimeToggle);
+
+        // Should show both textarea and preview side by side
+        // After enabling realtime mode, find the textarea in the new layout
+        const textareaInRealtimeMode = screen.getByLabelText(/task content/i);
+        expect(textareaInRealtimeMode).toBeVisible();
+        expect(screen.getByTestId("realtime-preview-panel")).toBeVisible();
+      });
+
+      it("updates preview in real-time as user types", async () => {
+        const user = userEvent.setup();
+        render(
+          <TaskCreateForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+        );
+
+        const contentTextarea = screen.getByLabelText(/content/i);
+
+        // Enter initial content and enable realtime preview
+        await user.click(contentTextarea);
+        await user.type(contentTextarea, "# Initial");
+
+        const realtimeToggle = screen.getByRole("button", { name: /enable real.*time preview/i });
+        await user.click(realtimeToggle);
+
+        // Verify initial content is rendered
+        await waitFor(() => {
+          expect(screen.getByText("Initial")).toBeInTheDocument();
+        });
+
+        // Add more content to the textarea in realtime mode
+        await user.type(screen.getByLabelText(/task content/i), "\n\n**Bold text**");
+
+        // Should update preview immediately without tab switching
+        await waitFor(() => {
+          expect(screen.getByText("Bold text")).toBeInTheDocument();
+        }, { timeout: 1000 });
+
+        // Both textarea and preview should be visible
+        expect(screen.getByLabelText(/task content/i)).toBeVisible();
+        expect(screen.getByTestId("realtime-preview-panel")).toBeVisible();
+      });
+
+      it("maintains cursor position while real-time preview updates", async () => {
+        const user = userEvent.setup();
+        render(
+          <TaskCreateForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+        );
+
+        const contentTextarea = screen.getByLabelText(/content/i) as HTMLTextAreaElement;
+
+        // Enable realtime preview
+        await user.click(contentTextarea);
+        await user.type(contentTextarea, "Hello World");
+
+        const realtimeToggle = screen.getByRole("button", { name: /enable real.*time preview/i });
+        await user.click(realtimeToggle);
+
+        // Set cursor position in middle
+        contentTextarea.setSelectionRange(5, 5);
+        const initialPosition = contentTextarea.selectionStart;
+
+        // Type more content
+        await user.type(contentTextarea, " Amazing");
+
+        // Cursor should maintain relative position
+        expect(contentTextarea.selectionStart).toBeGreaterThan(initialPosition);
+      });
+
+      it("toggles between tab mode and realtime mode", async () => {
+        const user = userEvent.setup();
+        render(
+          <TaskCreateForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+        );
+
+        const contentTextarea = screen.getByLabelText(/content/i);
+        await user.click(contentTextarea);
+        await user.type(contentTextarea, "# Test Content");
+
+        // Should start with tab mode
+        await waitFor(() => {
+          expect(screen.getByRole("tab", { name: /preview/i })).toBeInTheDocument();
+        });
+
+        // Enable realtime mode
+        const realtimeToggle = screen.getByRole("button", { name: /enable real.*time preview/i });
+        await user.click(realtimeToggle);
+
+        // Tabs should be hidden, realtime panel visible
+        expect(screen.queryByRole("tab", { name: /preview/i })).not.toBeInTheDocument();
+        expect(screen.getByTestId("realtime-preview-panel")).toBeVisible();
+
+        // Disable realtime mode
+        const disableRealtimeToggle = screen.getByRole("button", { name: /disable real.*time preview/i });
+        await user.click(disableRealtimeToggle);
+
+        // Should return to tab mode
+        await waitFor(() => {
+          expect(screen.getByRole("tab", { name: /preview/i })).toBeInTheDocument();
+        });
+        expect(screen.queryByTestId("realtime-preview-panel")).not.toBeInTheDocument();
+      });
+
+      it("handles performance with large content in realtime mode", async () => {
+        const user = userEvent.setup();
+        render(
+          <TaskCreateForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
+        );
+
+        const contentTextarea = screen.getByLabelText(/content/i);
+        await user.click(contentTextarea);
+        
+        // Create large content
+        const largeContent = "# Header\n\n" + "Large paragraph content. ".repeat(100);
+        await user.paste(largeContent);
+
+        // Enable realtime preview
+        const realtimeToggle = screen.getByRole("button", { name: /enable real.*time preview/i });
+        await user.click(realtimeToggle);
+
+        // Should render without performance issues
+        await waitFor(() => {
+          expect(screen.getByText("Header")).toBeInTheDocument();
+        }, { timeout: 2000 });
+
+        // Add more content - should still be responsive
+        await user.type(screen.getByLabelText(/task content/i), "\n\n**Added text**");
+
+        await waitFor(() => {
+          expect(screen.getByText("Added text")).toBeInTheDocument();
+        }, { timeout: 1000 });
+      });
+    });
+
     it("shows preview tab when content is entered", async () => {
       const user = userEvent.setup();
       render(
