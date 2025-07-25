@@ -132,7 +132,12 @@ describe('TodoList Component', () => {
       
       const todoItems = screen.getAllByTestId(/^todo-item-/);
       todoItems.forEach(item => {
-        expect(item).toHaveClass('border', 'rounded-lg', 'p-4', 'bg-white', 'dark:bg-gray-800');
+        // Check li element classes (excluding padding which is now on inner div)
+        expect(item).toHaveClass('border', 'rounded-lg', 'bg-white', 'dark:bg-gray-800');
+        // Check that the inner div has the padding classes
+        const innerDiv = item.querySelector('div.p-4');
+        expect(innerDiv).toBeInTheDocument();
+        expect(innerDiv).toHaveClass('p-4', 'md:p-6');
       });
     });
   });
@@ -327,7 +332,10 @@ describe('TodoList Component', () => {
       
       const todoItems = screen.getAllByTestId(/^todo-item-/);
       todoItems.forEach(item => {
-        expect(item).toHaveClass('p-4', 'md:p-6');
+        // Check that the inner div has the responsive padding classes
+        const innerDiv = item.querySelector('div.p-4');
+        expect(innerDiv).toBeInTheDocument();
+        expect(innerDiv).toHaveClass('p-4', 'md:p-6');
       });
     });
 

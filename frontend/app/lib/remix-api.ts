@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs } from '@remix-run/node';
-import { getTodos, createTodo, updateTodo, deleteTodo, ApiError } from './api-client';
+import { getTodos, getTodo, createTodo, updateTodo, deleteTodo, ApiError } from './api-client';
 import { validateCreateData, validateUpdateData } from './types';
 
 export async function getTodosLoader() {
@@ -23,6 +23,43 @@ export async function getTodosLoader() {
       { 
         todos: [], 
         error: 'Failed to load todos. Please check your connection.' 
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function getTodoLoader(id: string) {
+  try {
+    const todo = await getTodo(id);
+    return { todo };
+  } catch (error) {
+    console.error('Error loading todo:', error);
+    
+    if (error instanceof ApiError) {
+      if (error.status === 404) {
+        return Response.json(
+          { 
+            todo: null, 
+            error: 'Todo not found' 
+          },
+          { status: 404 }
+        );
+      }
+      
+      return Response.json(
+        { 
+          todo: null, 
+          error: 'Failed to load todo. Please try again.' 
+        },
+        { status: error.status || 500 }
+      );
+    }
+    
+    return Response.json(
+      { 
+        todo: null, 
+        error: 'Failed to load todo. Please check your connection.' 
       },
       { status: 500 }
     );
