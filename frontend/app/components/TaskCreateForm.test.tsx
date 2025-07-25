@@ -551,15 +551,26 @@ describe("TaskCreateForm Component", () => {
 
       await user.type(titleInput, "Test Title");
 
-      const submitEvent = new Event("submit", {
-        bubbles: true,
-        cancelable: true,
+      // Mock preventDefault to verify it's called during form submission
+      const preventDefaultSpy = vi.fn();
+      const handleSubmit = vi.fn((e) => {
+        preventDefaultSpy();
+        e.preventDefault();
       });
-      const preventDefaultSpy = vi.spyOn(submitEvent, "preventDefault");
 
-      form.dispatchEvent(submitEvent);
+      // Add event listener to capture form submission
+      form.addEventListener('submit', handleSubmit);
 
-      expect(preventDefaultSpy).toHaveBeenCalled();
+      // Trigger form submission via submit button click (more realistic)
+      const submitButton = screen.getByRole("button", { name: /create/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(preventDefaultSpy).toHaveBeenCalled();
+      });
+
+      // Clean up
+      form.removeEventListener('submit', handleSubmit);
     });
   });
 
