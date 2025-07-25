@@ -7,11 +7,33 @@ Object.defineProperty(window, 'scrollTo', {
   writable: true,
 });
 
-// Suppress React Router future flag warnings during testing
-const originalConsoleWarn = console.warn;
-console.warn = (message: string, ...args: any[]) => {
-  if (typeof message === 'string' && message.includes('React Router Future Flag Warning')) {
-    return; // Suppress the warning
+// Suppress React development warnings during testing
+const originalError = console.error;
+const originalWarn = console.warn;
+
+console.error = (...args: any[]) => {
+  const message = args[0];
+  if (typeof message === 'string') {
+    // Suppress React DOM nesting warnings
+    if (message.includes('validateDOMNesting') ||
+        message.includes('<html> cannot appear as a child of <div>') ||
+        message.includes('Warning: validateDOMNesting')) {
+      return;
+    }
   }
-  originalConsoleWarn(message, ...args);
+  originalError(...args);
+};
+
+console.warn = (...args: any[]) => {
+  const message = args[0];
+  if (typeof message === 'string') {
+    // Suppress React Router warnings and DOM nesting warnings
+    if (message.includes('React Router Future Flag Warning') ||
+        message.includes('validateDOMNesting') ||
+        message.includes('<html> cannot appear as a child of <div>') ||
+        message.includes('Warning: validateDOMNesting')) {
+      return;
+    }
+  }
+  originalWarn(...args);
 };

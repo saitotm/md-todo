@@ -1,62 +1,46 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, beforeEach } from "vitest";
 import { createRemixStub } from "@remix-run/testing";
-import App from "./root";
+import App, { LayoutContent } from "./root";
+import { Layout as AppLayout } from "./components/Layout";
 
 describe("Root Layout Component", () => {
   describe("Basic Layout Structure", () => {
-    it("renders HTML structure with correct lang attribute", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: () => <div data-testid="test-content">Test Content</div>,
-        },
-      ], {
-        future: {
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        },
-      });
-
-      render(<RemixStub />);
+    it("renders layout structure correctly", () => {
+      render(
+        <LayoutContent>
+          <AppLayout>
+            <div data-testid="test-content">Test Content</div>
+          </AppLayout>
+        </LayoutContent>
+      );
 
       // Confirm Layout component renders correctly
       expect(screen.getByTestId("test-content")).toBeInTheDocument();
     });
 
-    it("includes proper meta viewport for responsive design", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: () => <div data-testid="test-content">Test Content</div>,
-        },
-      ], {
-        future: {
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        },
-      });
+    it("includes responsive design support", () => {
+      render(
+        <LayoutContent>
+          <AppLayout>
+            <div data-testid="test-content">Test Content</div>
+          </AppLayout>
+        </LayoutContent>
+      );
 
-      render(<RemixStub />);
-
-      // Confirm Layout component renders correctly
-      expect(screen.getByTestId("test-content")).toBeInTheDocument();
+      // Confirm Layout component renders correctly with min-height
+      const container = screen.getByTestId("test-content").parentElement?.parentElement;
+      expect(container).toHaveClass("min-h-screen");
     });
 
-    it("includes charset meta tag", () => {
-      const RemixStub = createRemixStub([
-        {
-          path: "/",
-          Component: () => <div data-testid="test-content">Test Content</div>,
-        },
-      ], {
-        future: {
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        },
-      });
-
-      render(<RemixStub />);
+    it("renders basic layout structure", () => {
+      render(
+        <LayoutContent>
+          <AppLayout>
+            <div data-testid="test-content">Test Content</div>
+          </AppLayout>
+        </LayoutContent>
+      );
 
       // Confirm Layout component renders correctly
       expect(screen.getByTestId("test-content")).toBeInTheDocument();
