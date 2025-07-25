@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Todo, TodoUpdateData } from "../lib/types";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { TaskEditForm } from "./TaskEditForm";
+import { Modal } from "./Modal";
 
 export type FilterType = "all" | "completed" | "incomplete";
 export type SortType =
@@ -32,22 +33,21 @@ export function TodoList({
   onFilterChange,
   onSortChange,
 }: TodoListProps) {
-  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
 
-  const handleEditStart = (todoId: string) => {
-    setEditingTodoId(todoId);
+  const handleEditStart = (todo: Todo) => {
+    setEditingTodo(todo);
   };
 
   const handleEditSubmit = (data: TodoUpdateData) => {
-    const todo = todos.find(t => t.id === editingTodoId);
-    if (todo && onEdit) {
-      onEdit(todo, data);
+    if (editingTodo && onEdit) {
+      onEdit(editingTodo, data);
     }
-    setEditingTodoId(null);
+    setEditingTodo(null);
   };
 
   const handleEditCancel = () => {
-    setEditingTodoId(null);
+    setEditingTodo(null);
   };
 
   // Filter and sort todos
@@ -186,24 +186,10 @@ export function TodoList({
               border rounded-lg bg-white dark:bg-gray-800 
               border-gray-200 dark:border-gray-700 shadow-sm
               ${todo.completed ? "opacity-75" : ""}
-              ${editingTodoId === todo.id ? "ring-2 ring-blue-500" : ""}
             `}
             >
-              {editingTodoId === todo.id ? (
-                <div className="p-4 md:p-6">
-                  <TaskEditForm
-                    todo={todo}
-                    onSubmit={handleEditSubmit}
-                    onCancel={handleEditCancel}
-                    onLoadError={(error) => {
-                      console.error("Failed to load todo for editing:", error);
-                      setEditingTodoId(null);
-                    }}
-                  />
-                </div>
-              ) : (
-                <div className="p-4 md:p-6">
-                  <div className="flex items-start gap-3">
+              <div className="p-4 md:p-6">
+                <div className="flex items-start gap-3">
                 {/* Completion checkbox */}
                 <div className="flex-shrink-0 mt-1">
                   <input
@@ -269,7 +255,7 @@ export function TodoList({
                     <button
                       type="button"
                       data-testid={`edit-button-${todo.id}`}
-                      onClick={() => handleEditStart(todo.id)}
+                      onClick={() => handleEditStart(todo)}
                       aria-label={`Edit "${todo.title}"`}
                       className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 
                              transition-colors duration-200 rounded-md hover:bg-gray-100 
@@ -322,11 +308,29 @@ export function TodoList({
                 </div>
                   </div>
                 </div>
-              )}
             </li>
           ))}
         </ul>
       )}
+
+      {/* Edit Modal */}
+      <Modal
+        isOpen={editingTodo !== null}
+        onClose={handleEditCancel}
+        title={`Edit Task: ${editingTodo?.title || ""}`}
+      >
+        {editingTodo && (
+          <TaskEditForm
+            todo={editingTodo}
+            onSubmit={handleEditSubmit}
+            onCancel={handleEditCancel}
+            onLoadError={(error) => {
+              console.error("Failed to load todo for editing:", error);
+              setEditingTodo(null);
+            }}
+          />
+        )}
+      </Modal>
     </div>
   );
 }
