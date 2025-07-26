@@ -19,34 +19,51 @@ export function DeleteConfirmationDialog({
   const [error, setError] = useState<string | null>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Aggressive focus management to override Modal's default behavior
+  // Focus the cancel button when modal opens (after Modal's initial focus)
   useEffect(() => {
     if (isOpen && cancelButtonRef.current) {
-      // Use requestAnimationFrame to ensure this runs after Modal's focus management
-      const focusCancel = () => {
+      // Use multiple timing strategies to ensure focus is set
+      const focusButton = () => {
         if (cancelButtonRef.current) {
           cancelButtonRef.current.focus();
         }
       };
-      
-      // Multiple attempts with different timing
-      const timeouts = [
-        setTimeout(focusCancel, 0),
-        setTimeout(focusCancel, 10),
-        setTimeout(focusCancel, 50),
-        setTimeout(focusCancel, 100),
-        setTimeout(focusCancel, 200),
-      ];
-      
+
+      // Immediate focus
+      focusButton();
+
+      // Use requestAnimationFrame to run after render
       const rafId = requestAnimationFrame(() => {
-        requestAnimationFrame(focusCancel);
+        focusButton();
+        // And another one for good measure
+        requestAnimationFrame(focusButton);
       });
-      
+
+      // Also use setTimeout as backup
+      const timerId = setTimeout(focusButton, 10);
+      const timerId2 = setTimeout(focusButton, 50);
+
       return () => {
-        timeouts.forEach(clearTimeout);
         cancelAnimationFrame(rafId);
+        clearTimeout(timerId);
+        clearTimeout(timerId2);
       };
     }
+  }, [isOpen]);
+
+  // Handle keyboard events
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Enter' && event.target instanceof HTMLButtonElement) {
+        // Let the button handle its own Enter key - don't prevent default
+        return;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
   // Reset state when modal closes
@@ -124,8 +141,6 @@ export function DeleteConfirmationDialog({
             disabled={isDeleting}
             data-action="cancel"
             aria-label="Cancel deletion"
-            tabIndex={1}
-            autoFocus
             className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 
                      bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 
                      focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 
@@ -141,7 +156,6 @@ export function DeleteConfirmationDialog({
             disabled={isDeleting}
             data-action="delete"
             aria-label={`Delete task "${todo?.title || 'Unknown task'}"`}
-            tabIndex={2}
             className="px-4 py-2 text-sm font-medium text-white 
                      bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 
                      focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 
