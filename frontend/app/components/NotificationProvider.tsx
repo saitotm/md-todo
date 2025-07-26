@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { ErrorHandler, StateError, NetworkError } from '../lib/state-errors';
+import { ErrorHandler } from '../lib/state-errors';
 
 export interface Notification {
   id: string;

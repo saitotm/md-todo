@@ -30,8 +30,8 @@ function TestDeletionFeedback({
   onError, 
   onClear 
 }: { 
-  onSuccess?: (message: string, options?: any) => void;
-  onError?: (message: string, options?: any) => void;
+  onSuccess?: (message: string, options?: { error?: Error; retryable?: boolean }) => void;
+  onError?: (message: string, options?: { error?: Error; retryable?: boolean }) => void;
   onClear?: () => void;
 }) {
   const { showSuccessNotification, showErrorNotification, clearNotifications } = useDeletionFeedback();
