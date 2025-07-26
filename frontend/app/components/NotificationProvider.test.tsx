@@ -184,14 +184,19 @@ describe('NotificationProvider', () => {
       console.error = originalError;
     });
 
-    it('renders with testid for notification provider', () => {
+    it('provides notification provider context successfully', () => {
+      const TestComponent = () => {
+        const { hasActiveNotifications } = useNotifications();
+        return <div data-testid="provider-test">Provider working: {hasActiveNotifications.toString()}</div>;
+      };
+
       render(
         <NotificationProvider>
-          <div>Test content</div>
+          <TestComponent />
         </NotificationProvider>
       );
 
-      expect(screen.getByTestId('notification-provider')).toBeInTheDocument();
+      expect(screen.getByTestId('provider-test')).toHaveTextContent('Provider working: false');
     });
   });
 
@@ -203,7 +208,9 @@ describe('NotificationProvider', () => {
         </NotificationProvider>
       );
 
-      fireEvent.click(screen.getByTestId('show-success'));
+      act(() => {
+        fireEvent.click(screen.getByTestId('show-success'));
+      });
 
       expect(screen.getByTestId('notifications-count')).toHaveTextContent('1');
       expect(screen.getByTestId('has-active-notifications')).toHaveTextContent('true');
@@ -354,10 +361,14 @@ describe('NotificationProvider', () => {
         </NotificationProvider>
       );
 
-      fireEvent.click(screen.getByTestId('show-success'));
+      act(() => {
+        fireEvent.click(screen.getByTestId('show-success'));
+      });
       expect(screen.getByTestId('notifications-count')).toHaveTextContent('1');
 
-      fireEvent.click(screen.getByTestId('dismiss-first-animated'));
+      act(() => {
+        fireEvent.click(screen.getByTestId('dismiss-first-animated'));
+      });
       
       // Should be in removing state initially
       expect(screen.getByTestId('removing-notifications-count')).toHaveTextContent('1');
@@ -368,10 +379,8 @@ describe('NotificationProvider', () => {
         vi.advanceTimersByTime(300);
       });
 
-      await waitFor(() => {
-        expect(screen.getByTestId('notifications-count')).toHaveTextContent('0');
-        expect(screen.getByTestId('removing-notifications-count')).toHaveTextContent('0');
-      });
+      expect(screen.getByTestId('notifications-count')).toHaveTextContent('0');
+      expect(screen.getByTestId('removing-notifications-count')).toHaveTextContent('0');
     });
 
     it('clears all notifications at once', () => {
@@ -395,14 +404,16 @@ describe('NotificationProvider', () => {
   });
 
   describe('Auto-dismiss Functionality', () => {
-    it('auto-dismisses success notifications after 3 seconds', async () => {
+    it('auto-dismisses success notifications after 3 seconds', () => {
       render(
         <NotificationProvider>
           <TestNotificationComponent />
         </NotificationProvider>
       );
 
-      fireEvent.click(screen.getByTestId('show-success'));
+      act(() => {
+        fireEvent.click(screen.getByTestId('show-success'));
+      });
       expect(screen.getByTestId('notifications-count')).toHaveTextContent('1');
 
       // Fast forward 3 seconds
@@ -418,19 +429,19 @@ describe('NotificationProvider', () => {
         vi.advanceTimersByTime(300);
       });
 
-      await waitFor(() => {
-        expect(screen.getByTestId('notifications-count')).toHaveTextContent('0');
-      });
+      expect(screen.getByTestId('notifications-count')).toHaveTextContent('0');
     });
 
-    it('auto-dismisses error notifications after 8 seconds', async () => {
+    it('auto-dismisses error notifications after 8 seconds', () => {
       render(
         <NotificationProvider>
           <TestNotificationComponent />
         </NotificationProvider>
       );
 
-      fireEvent.click(screen.getByTestId('show-error'));
+      act(() => {
+        fireEvent.click(screen.getByTestId('show-error'));
+      });
       expect(screen.getByTestId('notifications-count')).toHaveTextContent('1');
 
       // Fast forward 7 seconds - should still be there
@@ -450,19 +461,19 @@ describe('NotificationProvider', () => {
         vi.advanceTimersByTime(300);
       });
 
-      await waitFor(() => {
-        expect(screen.getByTestId('notifications-count')).toHaveTextContent('0');
-      });
+      expect(screen.getByTestId('notifications-count')).toHaveTextContent('0');
     });
 
-    it('auto-dismisses info notifications after 5 seconds', async () => {
+    it('auto-dismisses info notifications after 5 seconds', () => {
       render(
         <NotificationProvider>
           <TestNotificationComponent />
         </NotificationProvider>
       );
 
-      fireEvent.click(screen.getByTestId('show-info'));
+      act(() => {
+        fireEvent.click(screen.getByTestId('show-info'));
+      });
       expect(screen.getByTestId('notifications-count')).toHaveTextContent('1');
 
       // Fast forward 5 seconds
@@ -477,9 +488,7 @@ describe('NotificationProvider', () => {
         vi.advanceTimersByTime(300);
       });
 
-      await waitFor(() => {
-        expect(screen.getByTestId('notifications-count')).toHaveTextContent('0');
-      });
+      expect(screen.getByTestId('notifications-count')).toHaveTextContent('0');
     });
   });
 
@@ -564,14 +573,16 @@ describe('useDeletionFeedback Hook', () => {
       expect(screen.getByTestId('deletion-has-active')).toHaveTextContent('true');
     });
 
-    it('auto-dismisses success notifications', async () => {
+    it('auto-dismisses success notifications', () => {
       render(
         <NotificationProvider>
           <TestDeletionFeedbackComponent />
         </NotificationProvider>
       );
 
-      fireEvent.click(screen.getByTestId('deletion-success'));
+      act(() => {
+        fireEvent.click(screen.getByTestId('deletion-success'));
+      });
       expect(screen.getByTestId('deletion-notifications-count')).toHaveTextContent('1');
 
       // Fast forward 3 seconds + animation
@@ -579,9 +590,7 @@ describe('useDeletionFeedback Hook', () => {
         vi.advanceTimersByTime(3300);
       });
 
-      await waitFor(() => {
-        expect(screen.getByTestId('deletion-notifications-count')).toHaveTextContent('0');
-      });
+      expect(screen.getByTestId('deletion-notifications-count')).toHaveTextContent('0');
     });
   });
 
