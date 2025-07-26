@@ -204,7 +204,7 @@ export function TaskCreateForm({
     });
   }, []);
 
-  const showPreviewTab = content.trim() !== "" && !isRealtimePreview;
+  const showPreviewTab = !isRealtimePreview;
 
   return (
     <form
@@ -258,16 +258,14 @@ export function TaskCreateForm({
             Content
           </label>
           <div className="flex items-center space-x-2">
-            {content.trim() !== "" && (
-              <button
-                type="button"
-                onClick={handleRealtimePreviewToggle}
-                className="px-3 py-1 text-xs font-medium text-purple-700 bg-purple-100 rounded-md hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-300 dark:hover:bg-purple-800"
-                aria-label={isRealtimePreview ? "Disable real-time preview" : "Enable real-time preview"}
-              >
-                {isRealtimePreview ? "Disable Real-time Preview" : "Enable Real-time Preview"}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleRealtimePreviewToggle}
+              className="px-3 py-1 text-xs font-medium text-purple-700 bg-purple-100 rounded-md hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-300 dark:hover:bg-purple-800"
+              aria-label={isRealtimePreview ? "Disable real-time preview" : "Enable real-time preview"}
+            >
+              {isRealtimePreview ? "Disable Real-time Preview" : "Enable Real-time Preview"}
+            </button>
             {showPreviewTab && (
               <div className="flex space-x-2" role="tablist">
                 <button

@@ -774,7 +774,7 @@ describe("TaskCreateForm Component", () => {
       });
     });
 
-    it("shows preview tab when content is entered", async () => {
+    it("shows preview tab always when not in realtime mode", async () => {
       const user = userEvent.setup();
       render(
         <TaskCreateForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
@@ -782,21 +782,25 @@ describe("TaskCreateForm Component", () => {
 
       const contentTextarea = screen.getByLabelText(/content/i);
 
-      // Preview tab should not be visible initially
+      // Preview tab should be visible initially (even with empty content)
       expect(
-        screen.queryByRole("tab", { name: /preview/i })
-      ).not.toBeInTheDocument();
+        screen.getByRole("tab", { name: /preview/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("tab", { name: /edit/i })
+      ).toBeInTheDocument();
 
-      // Enter content
+      // Enter content - tabs should still be visible
       await user.click(contentTextarea);
       await user.type(contentTextarea, "# Hello World");
 
-      // Wait for preview tab to appear
-      await waitFor(() => {
-        expect(
-          screen.getByRole("tab", { name: /preview/i })
-        ).toBeInTheDocument();
-      });
+      // Tabs should still be present
+      expect(
+        screen.getByRole("tab", { name: /preview/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("tab", { name: /edit/i })
+      ).toBeInTheDocument();
     });
 
     it("toggles between edit and preview modes", async () => {
@@ -982,9 +986,26 @@ describe("TaskCreateForm Component", () => {
       await user.tab();
       expect(titleInput).toHaveFocus();
 
+      // Realtime preview button is next in tab order
+      await user.tab();
+      const realtimeButton = screen.getByRole("button", { name: /enable real.*time preview/i });
+      expect(realtimeButton).toHaveFocus();
+
+      // Edit tab is next
+      await user.tab();
+      const editTab = screen.getByRole("tab", { name: /edit/i });
+      expect(editTab).toHaveFocus();
+
+      // Preview tab is next
+      await user.tab();
+      const previewTab = screen.getByRole("tab", { name: /preview/i });
+      expect(previewTab).toHaveFocus();
+
+      // Then the textarea
       await user.tab();
       expect(contentTextarea).toHaveFocus();
 
+      // Then the cancel button
       await user.tab();
       expect(cancelButton).toHaveFocus();
     });
