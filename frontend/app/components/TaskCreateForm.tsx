@@ -322,9 +322,9 @@ export function TaskCreateForm({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              <div className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                 Preview
-              </label>
+              </div>
               <div
                 data-testid="realtime-preview-panel"
                 className="w-full min-h-[152px] px-3 py-2 border border-gray-300 rounded-md bg-white dark:bg-gray-800 dark:border-gray-600 overflow-auto"

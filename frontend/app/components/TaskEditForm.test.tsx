@@ -450,8 +450,6 @@ describe("TaskEditForm Component", () => {
           />
         );
 
-        const contentTextarea = screen.getByLabelText(/content/i);
-
         // Should show realtime preview toggle button
         await waitFor(() => {
           expect(
@@ -483,8 +481,6 @@ describe("TaskEditForm Component", () => {
             onLoadError={mockOnLoadError}
           />
         );
-
-        const contentTextarea = screen.getByLabelText(/content/i);
 
         // Enable realtime preview
         const realtimeToggle = screen.getByRole("button", { name: /enable real.*time preview/i });
