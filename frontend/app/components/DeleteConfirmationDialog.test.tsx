@@ -308,8 +308,10 @@ describe('DeleteConfirmationDialog Component', () => {
         />
       );
 
-      const closeButton = screen.getByLabelText(/close modal/i);
-      await user.click(closeButton);
+      const closeButtons = screen.getAllByLabelText(/close modal/i);
+      // The X button is the second close button (first is backdrop)
+      const xCloseButton = closeButtons[1];
+      await user.click(xCloseButton);
 
       expect(mockOnCancel).toHaveBeenCalledTimes(1);
       expect(mockOnConfirm).not.toHaveBeenCalled();

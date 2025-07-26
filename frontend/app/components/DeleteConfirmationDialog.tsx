@@ -19,10 +19,33 @@ export function DeleteConfirmationDialog({
   const [error, setError] = useState<string | null>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Reset focus when modal closes
+  // Aggressive focus management to override Modal's default behavior
   useEffect(() => {
-    if (!isOpen && cancelButtonRef.current) {
-      cancelButtonRef.current.blur();
+    if (isOpen && cancelButtonRef.current) {
+      // Use requestAnimationFrame to ensure this runs after Modal's focus management
+      const focusCancel = () => {
+        if (cancelButtonRef.current) {
+          cancelButtonRef.current.focus();
+        }
+      };
+      
+      // Multiple attempts with different timing
+      const timeouts = [
+        setTimeout(focusCancel, 0),
+        setTimeout(focusCancel, 10),
+        setTimeout(focusCancel, 50),
+        setTimeout(focusCancel, 100),
+        setTimeout(focusCancel, 200),
+      ];
+      
+      const rafId = requestAnimationFrame(() => {
+        requestAnimationFrame(focusCancel);
+      });
+      
+      return () => {
+        timeouts.forEach(clearTimeout);
+        cancelAnimationFrame(rafId);
+      };
     }
   }, [isOpen]);
 
