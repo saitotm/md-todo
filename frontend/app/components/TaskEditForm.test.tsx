@@ -438,6 +438,71 @@ describe("TaskEditForm Component", () => {
       });
     });
 
+    describe("Real-time Preview Tests (Task 6.5)", () => {
+      it("enables real-time preview mode for editing", async () => {
+        const user = userEvent.setup();
+        render(
+          <TaskEditForm
+            todo={sampleTodo}
+            onSubmit={mockOnSubmit}
+            onCancel={mockOnCancel}
+            onLoadError={mockOnLoadError}
+          />
+        );
+
+        // Should show realtime preview toggle button
+        await waitFor(() => {
+          expect(
+            screen.getByRole("button", { name: /enable real.*time preview/i })
+          ).toBeInTheDocument();
+        });
+
+        // Enable realtime preview
+        const realtimeToggle = screen.getByRole("button", { name: /enable real.*time preview/i });
+        await user.click(realtimeToggle);
+
+        // Should show both textarea and preview side by side
+        expect(screen.getByLabelText(/task content/i)).toBeVisible();
+        expect(screen.getByTestId("realtime-preview-panel")).toBeVisible();
+
+        // Should show original content in preview
+        await waitFor(() => {
+          expect(screen.getByText("Sample content")).toBeInTheDocument();
+        });
+      });
+
+      it("updates preview in real-time during editing", async () => {
+        const user = userEvent.setup();
+        render(
+          <TaskEditForm
+            todo={sampleTodo}
+            onSubmit={mockOnSubmit}
+            onCancel={mockOnCancel}
+            onLoadError={mockOnLoadError}
+          />
+        );
+
+        // Enable realtime preview
+        const realtimeToggle = screen.getByRole("button", { name: /enable real.*time preview/i });
+        await user.click(realtimeToggle);
+
+        // Clear and add new content in realtime mode
+        const textareaInRealtimeMode = screen.getByLabelText(/task content/i);
+        await user.clear(textareaInRealtimeMode);
+        await user.type(textareaInRealtimeMode, "# Edited Content\n\n*Modified* text");
+
+        // Should update preview immediately
+        await waitFor(() => {
+          expect(screen.getByText("Edited Content")).toBeInTheDocument();
+          expect(screen.getByText("Modified")).toBeInTheDocument();
+        }, { timeout: 1000 });
+
+        // Both elements should remain visible
+        expect(screen.getByLabelText(/task content/i)).toBeVisible();
+        expect(screen.getByTestId("realtime-preview-panel")).toBeVisible();
+      });
+    });
+
     it("detects form changes and updates dirty state", async () => {
       const user = userEvent.setup();
       const mockOnStateChange = vi.fn();
@@ -730,15 +795,21 @@ describe("TaskEditForm Component", () => {
 
       const titleInput = screen.getByLabelText(/title/i);
       const contentTextarea = screen.getByLabelText(/content/i);
-      const cancelButton = screen.getByRole("button", { name: /cancel/i });
-
+      
       await user.tab();
       expect(titleInput).toHaveFocus();
 
+      // The realtime preview button appears to be next in the DOM order
+      await user.tab();
+      const realtimeButton = screen.getByRole("button", { name: /enable real.*time preview/i });
+      expect(realtimeButton).toHaveFocus();
+
+      // Then the textarea
       await user.tab();
       expect(contentTextarea).toHaveFocus();
 
-      await user.tab();
+      await user.tab(); // cancel button  
+      const cancelButton = screen.getByRole("button", { name: /cancel/i });
       expect(cancelButton).toHaveFocus();
     });
   });

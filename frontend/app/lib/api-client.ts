@@ -3,11 +3,11 @@ import { Todo, TodoCreateData, TodoUpdateData, ApiResponse } from "./types";
 // Dynamic API URL based on execution environment
 const getApiBaseUrl = () => {
   // Server-side (Node.js environment)
-  if (typeof window === 'undefined') {
-    return process.env.API_URL || 'http://backend:8000';
+  if (typeof window === "undefined") {
+    return process.env.API_URL || "http://backend:8000";
   }
   // Client-side (browser environment)
-  return 'http://localhost:8000';
+  return "http://localhost:8000";
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -72,9 +72,6 @@ async function apiRequest<T>(
 }
 
 export async function getTodos(): Promise<Todo[]> {
-  console.log("--------------------------");
-  console.log(API_URL);
-  console.log("--------------------------");
   try {
     return await apiRequest<Todo[]>("/todos", {
       method: "GET",
