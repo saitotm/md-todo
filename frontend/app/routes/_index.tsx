@@ -1,10 +1,12 @@
 import type { MetaFunction, ActionFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import { useLoaderData, useActionData, Form } from "@remix-run/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TodoList, FilterType, SortType } from "../components/TodoList";
 import { TaskCreateForm } from "../components/TaskCreateForm";
 import { DeleteConfirmationDialog } from "../components/DeleteConfirmationDialog";
+import { NotificationProvider, useDeletionFeedback } from "../components/NotificationProvider";
+import { NotificationDisplay } from "../components/NotificationDisplay";
 import {
   getTodos,
   updateTodo,
@@ -12,6 +14,7 @@ import {
   createTodo,
 } from "../lib/api-client";
 import { Todo, TodoCreateData, TodoUpdateData } from "../lib/types";
+import { StateError } from "../lib/state-errors";
 
 export const meta: MetaFunction = () => {
   return [
@@ -114,9 +117,10 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 }
 
-export default function Index() {
+function TodoApp() {
   const { todos, error: loadError } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const { showSuccessNotification, showErrorNotification, clearNotifications } = useDeletionFeedback();
   const [pendingToggle, setPendingToggle] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [pendingCreate, setPendingCreate] = useState<TodoCreateData | null>(
@@ -130,6 +134,7 @@ export default function Index() {
   const [sortBy, setSortBy] = useState<SortType>("created_at_desc");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [todoToDelete, setTodoToDelete] = useState<Todo | null>(null);
+  const [lastDeletedTodo, setLastDeletedTodo] = useState<Todo | null>(null);
 
   const handleToggle = (id: string) => {
     setPendingToggle(id);
@@ -144,25 +149,68 @@ export default function Index() {
   };
 
   const handleDeleteConfirm = async (id: string) => {
+    const todoToDeleteData = todos?.find((t: Todo) => t.id === id);
+    if (!todoToDeleteData) {
+      showErrorNotification("Task not found");
+      setTodoToDelete(null);
+      return;
+    }
+
     try {
+      setLastDeletedTodo(todoToDeleteData);
       setPendingDelete(id);
       // Form submission will trigger the action
+      setTodoToDelete(null);
     } catch (error) {
       console.error("Failed to delete todo:", error);
-      throw error; // Re-throw so the dialog can handle the error
-    } finally {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      showErrorNotification(
+        `Failed to delete task "${todoToDeleteData.title}". ${errorMessage}`,
+        { 
+          error: error instanceof Error ? error : new Error(errorMessage),
+          retryable: true,
+          onRetry: () => handleDeleteConfirm(id)
+        }
+      );
       setTodoToDelete(null);
     }
   };
 
   const handleDeleteCancel = () => {
     setTodoToDelete(null);
+    clearNotifications();
   };
 
   const handleCreateSubmit = (data: TodoCreateData) => {
     setPendingCreate(data);
     // Form submission will trigger the action
   };
+
+  // Handle action results for feedback
+  useEffect(() => {
+    if (actionData?.error && pendingDelete) {
+      // Error occurred during deletion
+      const errorMessage = actionData.error;
+      const todoTitle = lastDeletedTodo?.title || 'Unknown task';
+      
+      showErrorNotification(
+        `Failed to delete task "${todoTitle}". ${errorMessage}`,
+        { 
+          error: new StateError(errorMessage, { type: 'server' }),
+          retryable: false
+        }
+      );
+      setPendingDelete(null);
+      setLastDeletedTodo(null);
+    } else if (!actionData?.error && lastDeletedTodo && !pendingDelete) {
+      // Successful deletion (no error and we had a pending delete that completed)
+      const todoTitle = lastDeletedTodo.title || 'Task';
+      showSuccessNotification(
+        `Task "${todoTitle}" has been deleted successfully`
+      );
+      setLastDeletedTodo(null);
+    }
+  }, [actionData, pendingDelete, lastDeletedTodo, showSuccessNotification, showErrorNotification]);
 
   const handleCreateCancel = () => {
     setShowCreateForm(false);
@@ -176,6 +224,7 @@ export default function Index() {
 
   return (
     <div className="py-6">
+      <NotificationDisplay position="top-right" />
       {/* Statistics Bar */}
       <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
         <div className="flex items-center justify-between">
@@ -388,5 +437,13 @@ export default function Index() {
           onCancel={handleDeleteCancel}
         />
     </div>
+  );
+}
+
+export default function Index() {
+  return (
+    <NotificationProvider>
+      <TodoApp />
+    </NotificationProvider>
   );
 }

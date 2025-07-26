@@ -13,7 +13,7 @@ MD-Todo は、マークダウン形式でタスクを管理できるモダンな
 - React 18 + Remix
 - TypeScript
 - Tailwind CSS
-- カスタム状態管理システム (FormState, ErrorHandler)
+- カスタム状態管理システム (FormState, ErrorHandler, NotificationSystem)
 - Vitest (テスト)
 - Vite (ビルドツール)
 
@@ -258,6 +258,23 @@ cargo run --bin generate_openapi
 - エラー処理のユーティリティ
 - エラーメッセージの整形とユーザー表示制御
 
+#### 通知システム
+
+**NotificationProvider コンポーネント:**
+- コンテキストベースの通知状態管理
+- 通知のキュー管理、優先度制御、自動削除機能
+- アクセシビリティ対応（aria-live、スクリーンリーダー対応）
+
+**NotificationDisplay コンポーネント:**
+- 通知の視覚的表示を担当
+- 成功/エラー/警告/情報の各タイプに対応
+- 手動削除、再試行ボタンのサポート
+
+**useDeletionFeedback フック:**
+- 削除操作専用の通知管理フック
+- 成功通知とエラー通知の表示機能
+- 既存のエラーハンドリングシステムとの統合
+
 #### ファイル構成
 
 ```
@@ -265,6 +282,11 @@ app/lib/
 ├── state-errors.ts     # エラークラス定義
 ├── form-state.ts       # フォーム状態管理
 └── types.ts            # 型定義
+
+app/components/
+├── NotificationProvider.tsx  # 通知システム状態管理
+├── NotificationDisplay.tsx   # 通知表示コンポーネント
+└── DeleteConfirmationDialog.tsx  # 削除確認ダイアログ（通知システム統合済み）
 ```
 
 ## データベース
