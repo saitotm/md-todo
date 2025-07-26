@@ -203,6 +203,54 @@ function TodoApp() {
       );
       setPendingDelete(null);
       setLastDeletedTodo(null);
+    } else if (actionData?.error && pendingToggle) {
+      // Error occurred during toggle
+      const errorMessage = actionData.error;
+      const todo = todos?.find((t: Todo) => t.id === pendingToggle);
+      const todoTitle = todo?.title || 'Unknown task';
+      const action = todo?.completed ? 'mark as incomplete' : 'mark as complete';
+      
+      showNotification(
+        `Failed to ${action} task "${todoTitle}". ${errorMessage}`,
+        "error",
+        { 
+          error: new StateError(errorMessage, { type: 'server' }),
+          retryable: true,
+          onRetry: () => handleToggle(pendingToggle)
+        }
+      );
+      setPendingToggle(null);
+    } else if (actionData?.error && pendingEdit) {
+      // Error occurred during edit
+      const errorMessage = actionData.error;
+      const todo = todos?.find((t: Todo) => t.id === pendingEdit?.id);
+      const todoTitle = todo?.title || 'Unknown task';
+      
+      showNotification(
+        `Failed to update task "${todoTitle}". ${errorMessage}`,
+        "error",
+        { 
+          error: new StateError(errorMessage, { type: 'server' }),
+          retryable: true,
+          onRetry: () => handleEdit(todo!, pendingEdit.data)
+        }
+      );
+      setPendingEdit(null);
+    } else if (actionData?.error && pendingCreate) {
+      // Error occurred during creation
+      const errorMessage = actionData.error;
+      const taskTitle = pendingCreate?.title || 'New task';
+      
+      showNotification(
+        `Failed to create task "${taskTitle}". ${errorMessage}`,
+        "error",
+        { 
+          error: new StateError(errorMessage, { type: 'server' }),
+          retryable: true,
+          onRetry: () => handleCreateSubmit(pendingCreate)
+        }
+      );
+      setPendingCreate(null);
     } else if (!actionData?.error && lastDeletedTodo && !pendingDelete) {
       // Successful deletion (no error and we had a pending delete that completed)
       const todoTitle = lastDeletedTodo.title || 'Task';
@@ -222,16 +270,8 @@ function TodoApp() {
       setPendingCreate(null);
     }
     
-    // Handle successful task update/toggle
+    // Handle task toggle completion (success case - no notification needed)
     if (!actionData?.error && pendingToggle) {
-      const todo = todos?.find((t: Todo) => t.id === pendingToggle);
-      if (todo) {
-        const action = !todo.completed ? 'marked as complete' : 'marked as incomplete';
-        showNotification(
-          `Task "${todo.title}" has been ${action}`,
-          "success"
-        );
-      }
       setPendingToggle(null);
     }
     
