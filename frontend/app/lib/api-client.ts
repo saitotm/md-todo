@@ -46,10 +46,6 @@ async function apiRequest<T>(
     try {
       data = await response.json();
     } catch (jsonError) {
-      // If response is successful but has no JSON (like 204), don't throw error
-      if (response.ok) {
-        return undefined as T;
-      }
       const status = response?.status || 500;
       const statusText = response?.statusText || "Unknown Error";
       throw new ApiError(`HTTP ${status}: ${statusText}`, status);
