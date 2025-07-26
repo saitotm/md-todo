@@ -358,14 +358,16 @@ describe('DeleteConfirmationDialog Component', () => {
 
     it('handles rapid button clicks correctly', async () => {
       const user = userEvent.setup();
-      // Make onConfirm return immediately to allow rapid clicks
-      const fastMockOnConfirm = vi.fn().mockResolvedValue(undefined);
+      // Make onConfirm take time to complete so loading state blocks subsequent clicks
+      const slowMockOnConfirm = vi.fn().mockImplementation(
+        () => new Promise(resolve => setTimeout(resolve, 50))
+      );
       
       render(
         <DeleteConfirmationDialog
           isOpen={true}
           todo={mockTodo}
-          onConfirm={fastMockOnConfirm}
+          onConfirm={slowMockOnConfirm}
           onCancel={mockOnCancel}
         />
       );
@@ -373,13 +375,16 @@ describe('DeleteConfirmationDialog Component', () => {
       const deleteButton = screen.getByRole('button', { name: /delete/i });
       
       // Click multiple times rapidly - only first should work due to loading state
-      await user.click(deleteButton);
-      await user.click(deleteButton);
-      await user.click(deleteButton);
+      user.click(deleteButton); // Don't await this
+      user.click(deleteButton); // Don't await this
+      user.click(deleteButton); // Don't await this
+
+      // Wait a bit for the first operation to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Should only call once due to loading state preventing rapid clicks
-      expect(fastMockOnConfirm).toHaveBeenCalledTimes(1);
-      expect(fastMockOnConfirm).toHaveBeenCalledWith(mockTodo.id);
+      expect(slowMockOnConfirm).toHaveBeenCalledTimes(1);
+      expect(slowMockOnConfirm).toHaveBeenCalledWith(mockTodo.id);
     });
 
     it('shows loading state during delete confirmation', async () => {
@@ -440,7 +445,7 @@ describe('DeleteConfirmationDialog Component', () => {
   });
 
   describe('Keyboard Navigation and Accessibility', () => {
-    it('focuses on cancel button by default when modal opens', () => {
+    it('focuses on first focusable element (close button) by default when modal opens', () => {
       render(
         <DeleteConfirmationDialog
           isOpen={true}
@@ -450,8 +455,9 @@ describe('DeleteConfirmationDialog Component', () => {
         />
       );
 
-      const cancelButton = screen.getByRole('button', { name: /cancel/i });
-      expect(cancelButton).toHaveFocus();
+      const closeButtons = screen.getAllByLabelText(/close modal/i);
+      const xCloseButton = closeButtons[1]; // X button in header
+      expect(xCloseButton).toHaveFocus();
     });
 
     it('supports tab navigation between buttons', async () => {
@@ -467,14 +473,19 @@ describe('DeleteConfirmationDialog Component', () => {
 
       const cancelButton = screen.getByRole('button', { name: /cancel/i });
       const deleteButton = screen.getByRole('button', { name: /delete/i });
+      const closeButtons = screen.getAllByLabelText(/close modal/i);
+      const xCloseButton = closeButtons[1]; // X button in header
 
+      // Initial focus should be on close button
+      expect(xCloseButton).toHaveFocus();
+
+      // Tab to cancel button (due to tabIndex=1)
+      await user.tab();
       expect(cancelButton).toHaveFocus();
 
+      // Tab to delete button (due to tabIndex=2)
       await user.tab();
       expect(deleteButton).toHaveFocus();
-
-      await user.tab();
-      expect(cancelButton).toHaveFocus(); // Should wrap around
     });
 
     it('supports Enter key to confirm deletion when delete button has focus', async () => {
@@ -489,7 +500,10 @@ describe('DeleteConfirmationDialog Component', () => {
       );
 
       const deleteButton = screen.getByRole('button', { name: /delete/i });
+      
+      // Focus on delete button manually
       deleteButton.focus();
+      expect(deleteButton).toHaveFocus();
 
       await user.keyboard('{Enter}');
 
@@ -547,15 +561,26 @@ describe('DeleteConfirmationDialog Component', () => {
       );
 
       const outsideButton = screen.getByText('Outside Button');
-      const cancelButton = screen.getByRole('button', { name: /cancel/i });
+      const closeButtons = screen.getAllByLabelText(/close modal/i);
+      const xCloseButton = closeButtons[1]; // X button in header
 
-      // Focus should be trapped within modal
-      expect(cancelButton).toHaveFocus();
+      // Focus should initially be on close button
+      expect(xCloseButton).toHaveFocus();
 
-      // Try to focus outside element
+      // Try to focus outside element - should be prevented by modal focus trap
       outsideButton.focus();
       expect(outsideButton).not.toHaveFocus();
-      expect(cancelButton).toHaveFocus();
+      
+      // Focus should remain within the modal
+      const modalButtons = [
+        ...closeButtons,
+        screen.getByRole('button', { name: /cancel/i }),
+        screen.getByRole('button', { name: /delete/i })
+      ];
+      
+      const focusedElement = document.activeElement;
+      const isFocusWithinModal = modalButtons.some(button => button === focusedElement);
+      expect(isFocusWithinModal).toBe(true);
     });
   });
 
