@@ -19,20 +19,10 @@ export function DeleteConfirmationDialog({
   const [error, setError] = useState<string | null>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Focus management - override Modal's default focus
+  // Reset focus when modal closes
   useEffect(() => {
-    if (isOpen && cancelButtonRef.current) {
-      // Multiple attempts to ensure proper focus on cancel button
-      const timeouts = [
-        setTimeout(() => cancelButtonRef.current?.focus(), 0),
-        setTimeout(() => cancelButtonRef.current?.focus(), 50),
-        setTimeout(() => cancelButtonRef.current?.focus(), 100),
-        setTimeout(() => cancelButtonRef.current?.focus(), 200),
-      ];
-      
-      return () => {
-        timeouts.forEach(timeout => clearTimeout(timeout));
-      };
+    if (!isOpen && cancelButtonRef.current) {
+      cancelButtonRef.current.blur();
     }
   }, [isOpen]);
 
@@ -96,7 +86,7 @@ export function DeleteConfirmationDialog({
           </p>
           {todo && (
             <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-              "{todo.title}"
+              {todo.title}
             </p>
           )}
           <p className="text-red-600 dark:text-red-400 font-medium">
@@ -123,6 +113,8 @@ export function DeleteConfirmationDialog({
             disabled={isDeleting}
             data-action="cancel"
             aria-label="Cancel deletion"
+            tabIndex={1}
+            autoFocus
             className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 
                      bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 
                      focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 
@@ -139,6 +131,7 @@ export function DeleteConfirmationDialog({
             disabled={isDeleting}
             data-action="delete"
             aria-label={`Delete task "${todo?.title || 'Unknown task'}"`}
+            tabIndex={2}
             className="px-4 py-2 text-sm font-medium text-white 
                      bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 
                      focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 
