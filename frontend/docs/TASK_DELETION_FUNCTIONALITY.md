@@ -24,42 +24,17 @@ The `DeleteConfirmationDialog` is a modal component that provides a secure confi
 
 ```typescript
 interface DeleteConfirmationDialogProps {
-  isOpen: boolean;           // Controls modal visibility
-  todo: Todo | null;         // Task to be deleted (null when closed)
-  onConfirm: (id: string) => Promise<void> | void;  // Deletion handler
-  onCancel: () => void;      // Cancellation handler
+  isOpen: boolean; // Controls modal visibility
+  todo: Todo | null; // Task to be deleted (null when closed)
+  onConfirm: (id: string) => Promise<void> | void; // Deletion handler
+  onCancel: () => void; // Cancellation handler
 }
 ```
-
-#### Key Features
-
-1. **Accessibility-First Design**
-   - Automatic focus management (cancel button receives focus on open)
-   - ARIA labels for screen readers
-   - Keyboard navigation support
-   - Screen reader announcements
-
-2. **Visual Design**
-   - Clear warning message with task title display
-   - Destructive action styling (red delete button)
-   - Loading state indication during deletion
-   - Error message display area
-
-3. **User Safety**
-   - Clear warning: "This action cannot be undone"
-   - Task title confirmation display
-   - Double confirmation (open dialog + click delete)
-   - Cancel button focused by default
-
-4. **Error Handling**
-   - Displays error messages within the dialog
-   - Prevents multiple simultaneous deletion attempts
-   - Maintains loading state during async operations
 
 #### Usage Example
 
 ```typescript
-import { DeleteConfirmationDialog } from '../components/DeleteConfirmationDialog';
+import { DeleteConfirmationDialog } from "../components/DeleteConfirmationDialog";
 
 function TodoList() {
   const [todoToDelete, setTodoToDelete] = useState<Todo | null>(null);
@@ -105,8 +80,14 @@ The `useDeletionFeedback` hook provides specialized notification functionality f
 
 ```typescript
 interface DeletionFeedbackAPI {
-  showSuccessNotification: (message: string, options?: NotificationOptions) => string;
-  showErrorNotification: (message: string, options?: NotificationOptions) => string;
+  showSuccessNotification: (
+    message: string,
+    options?: NotificationOptions
+  ) => string;
+  showErrorNotification: (
+    message: string,
+    options?: NotificationOptions
+  ) => string;
   clearNotifications: () => void;
   notifications: Notification[];
   hasActiveNotifications: boolean;
@@ -116,11 +97,13 @@ interface DeletionFeedbackAPI {
 #### Features
 
 1. **Success Notifications**
+
    - 3-second auto-dismiss duration
    - Polite screen reader announcements
    - Confirmation of successful deletion
 
 2. **Error Notifications**
+
    - Retry functionality integration
    - Assertive screen reader announcements
    - High priority in notification queue
@@ -134,28 +117,22 @@ interface DeletionFeedbackAPI {
 #### Usage Example
 
 ```typescript
-import { useDeletionFeedback } from '../components/NotificationProvider';
+import { useDeletionFeedback } from "../components/NotificationProvider";
 
 function TodoComponent() {
-  const { 
-    showSuccessNotification, 
-    showErrorNotification, 
-    clearNotifications 
-  } = useDeletionFeedback();
+  const { showSuccessNotification, showErrorNotification, clearNotifications } =
+    useDeletionFeedback();
 
   const handleDelete = async (id: string, title: string) => {
     try {
       await deleteTodo(id);
       showSuccessNotification(`Task "${title}" deleted successfully`);
     } catch (error) {
-      showErrorNotification(
-        `Failed to delete task "${title}"`,
-        { 
-          error: error instanceof Error ? error : new Error('Unknown error'),
-          retryable: true,
-          onRetry: () => handleDelete(id, title)
-        }
-      );
+      showErrorNotification(`Failed to delete task "${title}"`, {
+        error: error instanceof Error ? error : new Error("Unknown error"),
+        retryable: true,
+        onRetry: () => handleDelete(id, title),
+      });
     }
   };
 }
@@ -166,17 +143,20 @@ function TodoComponent() {
 ### Deletion Process Flow
 
 1. **Initiation**
+
    - User clicks delete button on a task
    - `handleDelete(id)` is called
    - Task data is retrieved and stored in state
    - `setTodoToDelete(todo)` opens the confirmation dialog
 
 2. **Confirmation Dialog**
+
    - Dialog displays with task information
    - Focus is automatically set to "Cancel" button for safety
    - User can either cancel or confirm deletion
 
 3. **Deletion Execution** (if confirmed)
+
    - `handleDeleteConfirm(id)` is called
    - Loading state is set (`isDeleting: true`)
    - API call is made to delete the task
@@ -192,16 +172,19 @@ function TodoComponent() {
 The deletion functionality implements a multi-layered error handling approach:
 
 #### Layer 1: Dialog-Level Error Handling
+
 - Errors during deletion are caught and displayed within the dialog
 - Prevents dialog from closing on error
 - Maintains user context and allows retry
 
 #### Layer 2: Notification System Error Handling
+
 - System-level errors are displayed as persistent notifications
 - Provides retry functionality for recoverable errors
 - Integrates with the `ErrorHandler` class for error classification
 
 #### Layer 3: Network Error Recovery
+
 - Distinguishes between retryable and non-retryable errors
 - Provides user-friendly error messages
 - Maintains operation state for retry attempts
@@ -213,17 +196,19 @@ The deletion functionality integrates with the backend API through:
 **Endpoint:** `DELETE /api/todos/:id`
 
 **Expected Responses:**
-- **200/204**: Successful deletion
+
+- **204**: Successful deletion
 - **404**: Task not found
 - **500**: Server error
 
 **Error Handling:**
+
 ```typescript
 try {
   const response = await fetch(`/api/todos/${id}`, {
-    method: 'DELETE',
+    method: "DELETE",
   });
-  
+
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
@@ -244,11 +229,13 @@ try {
 ### Accessibility Features
 
 1. **Keyboard Navigation**
+
    - Tab order: Cancel → Delete
    - Enter key confirms focused button
    - Escape key cancels operation
 
 2. **Screen Reader Support**
+
    - ARIA labels on all interactive elements
    - Live region announcements for status changes
    - Descriptive button labels with task context
@@ -261,6 +248,7 @@ try {
 ### Feedback Mechanisms
 
 1. **Immediate Feedback**
+
    - Button states change during operation
    - Loading indicators prevent multiple submissions
    - Error messages appear immediately
@@ -277,11 +265,13 @@ try {
 The deletion functionality should be tested for:
 
 1. **Dialog Behavior**
+
    - Opens correctly with task data
    - Handles user confirmation and cancellation
    - Displays errors appropriately
 
 2. **Notification System**
+
    - Success messages are shown correctly
    - Error messages include retry functionality
    - Notifications are dismissed appropriately
@@ -294,6 +284,7 @@ The deletion functionality should be tested for:
 ### Integration Tests
 
 1. **Complete Deletion Flow**
+
    - From button click to successful deletion
    - Error recovery scenarios
    - Notification display and dismissal
@@ -313,7 +304,7 @@ The notification system allows customization of display durations:
 // Success notifications (default: 3000ms)
 showSuccessNotification(message, { duration: 5000 });
 
-// Error notifications (default: 8000ms)  
+// Error notifications (default: 8000ms)
 showErrorNotification(message, { duration: 10000 });
 ```
 
@@ -325,43 +316,21 @@ Error notifications can be configured for retry behavior:
 showErrorNotification(message, {
   retryable: true,
   onRetry: () => retryDeletionFunction(),
-  persistent: true  // Don't auto-dismiss
+  persistent: true, // Don't auto-dismiss
 });
 ```
-
-## Best Practices
-
-### Implementation Guidelines
-
-1. **Always use confirmation dialogs** for destructive actions
-2. **Provide clear feedback** for all operations
-3. **Handle errors gracefully** with user-friendly messages
-4. **Maintain accessibility** standards throughout
-5. **Test error scenarios** thoroughly
-
-### Security Considerations
-
-1. **Validate permissions** before showing delete options
-2. **Verify task ownership** before deletion
-3. **Handle authorization errors** appropriately
-4. **Sanitize error messages** to prevent information leakage
-
-### Performance Considerations
-
-1. **Optimize dialog rendering** for large task lists
-2. **Debounce multiple deletion attempts**
-3. **Clean up event listeners** properly
-4. **Manage notification queue size** to prevent memory issues
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **Dialog not opening**
+
    - Check that `todo` prop is not null
    - Verify `isOpen` state management
 
 2. **Deletion not working**
+
    - Verify API endpoint connectivity
    - Check authentication/authorization
    - Review error messages in notifications
@@ -378,11 +347,11 @@ The notification system includes debugging support:
 ```typescript
 // Check active notifications
 const { notifications, hasActiveNotifications } = useDeletionFeedback();
-console.log('Active notifications:', notifications);
+console.log("Active notifications:", notifications);
 
 // Monitor notification queue
 useEffect(() => {
-  console.log('Notification count:', notifications.length);
+  console.log("Notification count:", notifications.length);
 }, [notifications]);
 ```
 
