@@ -493,13 +493,13 @@ API_URL=http://localhost:8000
 
 - `docs/ARCHITECTURE.md` - システムアーキテクチャ詳細
 - `docs/SETUP.md` - 開発環境セットアップガイド
-- `docs/task-forms-documentation.md` - タスク作成・編集機能ドキュメント
 
 ### コンポーネントドキュメント
 
 - `frontend/docs/FRONTEND_COMPONENTS.md` - フロントエンドコンポーネント詳細
 - `frontend/docs/MARKDOWN_PROCESSING.md` - Markdown処理機能詳細
 - `frontend/docs/TODO_LIST_FUNCTIONALITY.md` - Todoリスト機能詳細
+- `frontend/docs/TASK_FORMS_DOCUMENTATION.md` - タスク作成・編集機能ドキュメント
 
 ## 参考リンク
 
