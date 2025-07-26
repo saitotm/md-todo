@@ -1,28 +1,30 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useNotifications, Notification } from './NotificationProvider';
 
 interface NotificationItemProps {
   notification: Notification;
   onDismiss: (id: string) => void;
+  isRemoving?: boolean;
 }
 
-function NotificationItem({ notification, onDismiss }: NotificationItemProps) {
+function NotificationItem({ notification, onDismiss, isRemoving = false }: NotificationItemProps) {
   const { id, type, message, dismissible, retryable, onRetry } = notification;
 
   const getNotificationStyles = () => {
-    const baseStyles = 'p-4 mb-3 rounded-lg shadow-lg flex items-start space-x-3 transition-all duration-300 ease-in-out';
+    const baseStyles = 'p-4 mb-3 rounded-lg shadow-lg flex items-start space-x-3 transition-all duration-300 ease-in-out transform';
+    const slideOutClass = isRemoving ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100';
     
     switch (type) {
       case 'success':
-        return `${baseStyles} bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800`;
+        return `${baseStyles} ${slideOutClass} bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800`;
       case 'error':
-        return `${baseStyles} bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800`;
+        return `${baseStyles} ${slideOutClass} bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800`;
       case 'warning':
-        return `${baseStyles} bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800`;
+        return `${baseStyles} ${slideOutClass} bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800`;
       case 'info':
-        return `${baseStyles} bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800`;
+        return `${baseStyles} ${slideOutClass} bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800`;
       default:
-        return `${baseStyles} bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800`;
+        return `${baseStyles} ${slideOutClass} bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800`;
     }
   };
 
@@ -170,6 +172,22 @@ export function NotificationDisplay({
 }: NotificationDisplayProps) {
   const { notifications, dismissNotification } = useNotifications();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [removingNotifications, setRemovingNotifications] = useState<Set<string>>(new Set());
+
+  const handleDismissWithAnimation = (id: string) => {
+    // Add to removing set to trigger slide-out animation
+    setRemovingNotifications(prev => new Set([...prev, id]));
+    
+    // After animation completes, actually dismiss the notification
+    setTimeout(() => {
+      dismissNotification(id);
+      setRemovingNotifications(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
+    }, 300); // Match the transition duration
+  };
 
   // Handle screen reader announcements
   useEffect(() => {
@@ -230,7 +248,8 @@ export function NotificationDisplay({
           <NotificationItem
             key={notification.id}
             notification={notification}
-            onDismiss={dismissNotification}
+            onDismiss={handleDismissWithAnimation}
+            isRemoving={removingNotifications.has(notification.id)}
           />
         ))}
       </div>
