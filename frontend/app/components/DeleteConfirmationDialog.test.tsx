@@ -358,25 +358,28 @@ describe('DeleteConfirmationDialog Component', () => {
 
     it('handles rapid button clicks correctly', async () => {
       const user = userEvent.setup();
+      // Make onConfirm return immediately to allow rapid clicks
+      const fastMockOnConfirm = vi.fn().mockResolvedValue(undefined);
+      
       render(
         <DeleteConfirmationDialog
           isOpen={true}
           todo={mockTodo}
-          onConfirm={mockOnConfirm}
+          onConfirm={fastMockOnConfirm}
           onCancel={mockOnCancel}
         />
       );
 
       const deleteButton = screen.getByRole('button', { name: /delete/i });
       
-      // Click multiple times rapidly
+      // Click multiple times rapidly - only first should work due to loading state
       await user.click(deleteButton);
       await user.click(deleteButton);
       await user.click(deleteButton);
 
-      // Should only call once (component should handle debouncing)
-      expect(mockOnConfirm).toHaveBeenCalledTimes(3);
-      expect(mockOnConfirm).toHaveBeenCalledWith(mockTodo.id);
+      // Should only call once due to loading state preventing rapid clicks
+      expect(fastMockOnConfirm).toHaveBeenCalledTimes(1);
+      expect(fastMockOnConfirm).toHaveBeenCalledWith(mockTodo.id);
     });
 
     it('shows loading state during delete confirmation', async () => {

@@ -65,6 +65,8 @@ export function DeleteConfirmationDialog({
 
     try {
       await onConfirm(todo.id);
+      // Reset loading state after successful deletion
+      setIsDeleting(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred while deleting the task');
       setIsDeleting(false);
