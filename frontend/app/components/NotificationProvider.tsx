@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 
 export interface Notification {
   id: string;
@@ -64,10 +64,42 @@ export function NotificationProvider({
 }: NotificationProviderProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [removingNotifications, setRemovingNotifications] = useState<Set<string>>(new Set());
+  const timeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
 
   const generateId = useCallback(() => {
     return `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }, []);
+
+  const dismissNotification = useCallback((id: string) => {
+    // Clear the auto-dismiss timer if it exists
+    if (timeoutRef.current[id]) {
+      clearTimeout(timeoutRef.current[id]);
+      delete timeoutRef.current[id];
+    }
+
+    setNotifications(prev => {
+      const notification = prev.find(n => n.id === id);
+      if (notification?.onDismiss) {
+        notification.onDismiss();
+      }
+      return prev.filter(n => n.id !== id);
+    });
+  }, []);
+
+  const dismissNotificationWithAnimation = useCallback((id: string) => {
+    // Add to removing set to trigger slide-out animation
+    setRemovingNotifications(prev => new Set([...prev, id]));
+    
+    // After animation completes, actually dismiss the notification
+    setTimeout(() => {
+      dismissNotification(id);
+      setRemovingNotifications(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
+    }, 300); // Match the transition duration
+  }, [dismissNotification]);
 
   const showNotification = useCallback((
     message: string, 
@@ -125,35 +157,21 @@ export function NotificationProvider({
       return newNotifications;
     });
 
+    // Set up auto-dismiss timer for this specific notification
+    if (notification.autoDismiss && !notification.persistent && notification.duration) {
+      timeoutRef.current[notification.id] = setTimeout(() => {
+        dismissNotificationWithAnimation(notification.id);
+      }, notification.duration);
+    }
+
     return id;
-  }, [generateId, maxNotifications]);
-
-  const dismissNotification = useCallback((id: string) => {
-    setNotifications(prev => {
-      const notification = prev.find(n => n.id === id);
-      if (notification?.onDismiss) {
-        notification.onDismiss();
-      }
-      return prev.filter(n => n.id !== id);
-    });
-  }, []);
-
-  const dismissNotificationWithAnimation = useCallback((id: string) => {
-    // Add to removing set to trigger slide-out animation
-    setRemovingNotifications(prev => new Set([...prev, id]));
-    
-    // After animation completes, actually dismiss the notification
-    setTimeout(() => {
-      dismissNotification(id);
-      setRemovingNotifications(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(id);
-        return newSet;
-      });
-    }, 300); // Match the transition duration
-  }, [dismissNotification]);
+  }, [generateId, maxNotifications, dismissNotificationWithAnimation]);
 
   const clearNotifications = useCallback(() => {
+    // Clear all active timers
+    Object.values(timeoutRef.current).forEach(clearTimeout);
+    timeoutRef.current = {};
+
     setNotifications(prev => {
       prev.forEach(notification => {
         if (notification.onDismiss) {
@@ -163,23 +181,6 @@ export function NotificationProvider({
       return [];
     });
   }, []);
-
-  // Auto-dismiss notifications
-  useEffect(() => {
-    const timers: Record<string, NodeJS.Timeout> = {};
-
-    notifications.forEach(notification => {
-      if (notification.autoDismiss && !notification.persistent && notification.duration) {
-        timers[notification.id] = setTimeout(() => {
-          dismissNotificationWithAnimation(notification.id);
-        }, notification.duration);
-      }
-    });
-
-    return () => {
-      Object.values(timers).forEach(clearTimeout);
-    };
-  }, [notifications, dismissNotificationWithAnimation]);
 
   const hasActiveNotifications = notifications.length > 0;
 
@@ -199,4 +200,3 @@ export function NotificationProvider({
     </NotificationContext.Provider>
   );
 }
-
