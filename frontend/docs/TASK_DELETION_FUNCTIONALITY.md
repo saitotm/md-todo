@@ -6,11 +6,10 @@ The MD-Todo application provides a comprehensive task deletion system that ensur
 
 ## Architecture
 
-The task deletion functionality consists of three main components:
+The task deletion functionality consists of two main components:
 
 1. **DeleteConfirmationDialog** - Modal dialog for user confirmation
-2. **useDeletionFeedback Hook** - Feedback and notification system
-3. **Integration Layer** - Connection between UI components and API
+2. **Integration Layer** - Connection between UI components and API
 
 ## Components
 
@@ -70,73 +69,6 @@ function TodoList() {
 }
 ```
 
-### useDeletionFeedback Hook
-
-**File:** `app/components/NotificationProvider.tsx` (lines 204-237)
-
-The `useDeletionFeedback` hook provides specialized notification functionality for deletion operations.
-
-#### Interface
-
-```typescript
-interface DeletionFeedbackAPI {
-  showSuccessNotification: (
-    message: string,
-    options?: NotificationOptions
-  ) => string;
-  showErrorNotification: (
-    message: string,
-    options?: NotificationOptions
-  ) => string;
-  clearNotifications: () => void;
-  notifications: Notification[];
-  hasActiveNotifications: boolean;
-}
-```
-
-#### Features
-
-1. **Success Notifications**
-
-   - 3-second auto-dismiss duration
-   - Polite screen reader announcements
-   - Confirmation of successful deletion
-
-2. **Error Notifications**
-
-   - Retry functionality integration
-   - Assertive screen reader announcements
-   - High priority in notification queue
-   - Enhanced error information display
-
-3. **Accessibility**
-   - Screen reader compatibility
-   - ARIA live region announcements
-   - Configurable announcement levels
-
-#### Usage Example
-
-```typescript
-import { useDeletionFeedback } from "../components/NotificationProvider";
-
-function TodoComponent() {
-  const { showSuccessNotification, showErrorNotification, clearNotifications } =
-    useDeletionFeedback();
-
-  const handleDelete = async (id: string, title: string) => {
-    try {
-      await deleteTodo(id);
-      showSuccessNotification(`Task "${title}" deleted successfully`);
-    } catch (error) {
-      showErrorNotification(`Failed to delete task "${title}"`, {
-        error: error instanceof Error ? error : new Error("Unknown error"),
-        retryable: true,
-        onRetry: () => handleDelete(id, title),
-      });
-    }
-  };
-}
-```
 
 ## Integration and Data Flow
 
@@ -346,7 +278,7 @@ The notification system includes debugging support:
 
 ```typescript
 // Check active notifications
-const { notifications, hasActiveNotifications } = useDeletionFeedback();
+const { notifications, hasActiveNotifications } = useNotifications();
 console.log("Active notifications:", notifications);
 
 // Monitor notification queue
