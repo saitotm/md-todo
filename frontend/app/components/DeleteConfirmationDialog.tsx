@@ -19,13 +19,20 @@ export function DeleteConfirmationDialog({
   const [error, setError] = useState<string | null>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Focus management
+  // Focus management - override Modal's default focus
   useEffect(() => {
     if (isOpen && cancelButtonRef.current) {
-      // Small delay to ensure modal is fully rendered
-      setTimeout(() => {
-        cancelButtonRef.current?.focus();
-      }, 100);
+      // Multiple attempts to ensure proper focus on cancel button
+      const timeouts = [
+        setTimeout(() => cancelButtonRef.current?.focus(), 0),
+        setTimeout(() => cancelButtonRef.current?.focus(), 50),
+        setTimeout(() => cancelButtonRef.current?.focus(), 100),
+        setTimeout(() => cancelButtonRef.current?.focus(), 200),
+      ];
+      
+      return () => {
+        timeouts.forEach(timeout => clearTimeout(timeout));
+      };
     }
   }, [isOpen]);
 
@@ -58,6 +65,9 @@ export function DeleteConfirmationDialog({
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter') {
+      event.preventDefault();
+      event.stopPropagation();
+      
       const target = event.target as HTMLElement;
       if (target.getAttribute('data-action') === 'delete') {
         handleConfirm();
