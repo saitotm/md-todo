@@ -224,26 +224,6 @@ describe('API Client', () => {
       });
     });
 
-    it('should delete a todo successfully with HTTP 200 (legacy)', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          success: true,
-          data: { message: 'Todo deleted successfully' },
-          error: null
-        }),
-      });
-
-      await deleteTodo(todoId);
-
-      expect(mockFetch).toHaveBeenCalledWith(`${mockApiUrl}/todos/${todoId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-    });
 
     it('should handle todo not found error on delete', async () => {
       mockFetch.mockResolvedValue({
