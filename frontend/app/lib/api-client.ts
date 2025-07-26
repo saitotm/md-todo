@@ -37,6 +37,11 @@ async function apiRequest<T>(
   try {
     const response = await fetch(url, config);
 
+    // Handle 204 No Content responses (successful with no body)
+    if (response.status === 204 && response.ok) {
+      return undefined as T;
+    }
+
     let data: ApiResponse<T>;
     try {
       data = await response.json();
