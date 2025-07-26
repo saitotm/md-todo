@@ -78,19 +78,6 @@ export function DeleteConfirmationDialog({
     onCancel();
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      event.stopPropagation();
-      
-      const target = event.target as HTMLElement;
-      if (target.getAttribute('data-action') === 'delete') {
-        handleConfirm();
-      } else if (target.getAttribute('data-action') === 'cancel') {
-        handleCancel();
-      }
-    }
-  };
 
   if (!isOpen) {
     return null;
@@ -134,7 +121,6 @@ export function DeleteConfirmationDialog({
             ref={cancelButtonRef}
             type="button"
             onClick={handleCancel}
-            onKeyDown={handleKeyDown}
             disabled={isDeleting}
             data-action="cancel"
             aria-label="Cancel deletion"
@@ -152,7 +138,6 @@ export function DeleteConfirmationDialog({
           <button
             type="button"
             onClick={handleConfirm}
-            onKeyDown={handleKeyDown}
             disabled={isDeleting}
             data-action="delete"
             aria-label={`Delete task "${todo?.title || 'Unknown task'}"`}
