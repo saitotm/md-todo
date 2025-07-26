@@ -38,8 +38,10 @@ interface NotificationContextType {
   notifications: Notification[];
   showNotification: (message: string, type: Notification['type'], options?: NotificationOptions) => string;
   dismissNotification: (id: string) => void;
+  dismissNotificationWithAnimation: (id: string) => void;
   clearNotifications: () => void;
   hasActiveNotifications: boolean;
+  removingNotifications: Set<string>;
 }
 
 const NotificationContext = createContext<NotificationContextType | null>(null);
@@ -62,6 +64,7 @@ export function NotificationProvider({
   maxNotifications = 5 
 }: NotificationProviderProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [removingNotifications, setRemovingNotifications] = useState<Set<string>>(new Set());
 
   const generateId = useCallback(() => {
     return `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -136,6 +139,21 @@ export function NotificationProvider({
     });
   }, []);
 
+  const dismissNotificationWithAnimation = useCallback((id: string) => {
+    // Add to removing set to trigger slide-out animation
+    setRemovingNotifications(prev => new Set([...prev, id]));
+    
+    // After animation completes, actually dismiss the notification
+    setTimeout(() => {
+      dismissNotification(id);
+      setRemovingNotifications(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
+    }, 300); // Match the transition duration
+  }, [dismissNotification]);
+
   const clearNotifications = useCallback(() => {
     setNotifications(prev => {
       prev.forEach(notification => {
@@ -154,7 +172,7 @@ export function NotificationProvider({
     notifications.forEach(notification => {
       if (notification.autoDismiss && !notification.persistent && notification.duration) {
         timers[notification.id] = setTimeout(() => {
-          dismissNotification(notification.id);
+          dismissNotificationWithAnimation(notification.id);
         }, notification.duration);
       }
     });
@@ -162,7 +180,7 @@ export function NotificationProvider({
     return () => {
       Object.values(timers).forEach(clearTimeout);
     };
-  }, [notifications, dismissNotification]);
+  }, [notifications, dismissNotificationWithAnimation]);
 
   const hasActiveNotifications = notifications.length > 0;
 
@@ -170,8 +188,10 @@ export function NotificationProvider({
     notifications,
     showNotification,
     dismissNotification,
+    dismissNotificationWithAnimation,
     clearNotifications,
     hasActiveNotifications,
+    removingNotifications,
   };
 
   return (

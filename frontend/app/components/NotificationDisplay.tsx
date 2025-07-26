@@ -170,24 +170,8 @@ export function NotificationDisplay({
   position = 'top-right', 
   className = '' 
 }: NotificationDisplayProps) {
-  const { notifications, dismissNotification } = useNotifications();
+  const { notifications, dismissNotificationWithAnimation, removingNotifications } = useNotifications();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [removingNotifications, setRemovingNotifications] = useState<Set<string>>(new Set());
-
-  const handleDismissWithAnimation = (id: string) => {
-    // Add to removing set to trigger slide-out animation
-    setRemovingNotifications(prev => new Set([...prev, id]));
-    
-    // After animation completes, actually dismiss the notification
-    setTimeout(() => {
-      dismissNotification(id);
-      setRemovingNotifications(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(id);
-        return newSet;
-      });
-    }, 300); // Match the transition duration
-  };
 
   // Handle screen reader announcements
   useEffect(() => {
@@ -248,7 +232,7 @@ export function NotificationDisplay({
           <NotificationItem
             key={notification.id}
             notification={notification}
-            onDismiss={handleDismissWithAnimation}
+            onDismiss={dismissNotificationWithAnimation}
             isRemoving={removingNotifications.has(notification.id)}
           />
         ))}
