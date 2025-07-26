@@ -4,6 +4,7 @@ import { useLoaderData, useActionData, Form } from "@remix-run/react";
 import { useState } from "react";
 import { TodoList, FilterType, SortType } from "../components/TodoList";
 import { TaskCreateForm } from "../components/TaskCreateForm";
+import { DeleteConfirmationDialog } from "../components/DeleteConfirmationDialog";
 import {
   getTodos,
   updateTodo,
@@ -128,6 +129,8 @@ export default function Index() {
   const [filter, setFilter] = useState<FilterType>("all");
   const [sortBy, setSortBy] = useState<SortType>("created_at_desc");
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [todoToDelete, setTodoToDelete] = useState<Todo | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleToggle = (id: string) => {
     setPendingToggle(id);
@@ -135,10 +138,28 @@ export default function Index() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this todo?")) {
+    const todo = todos?.find((t: Todo) => t.id === id);
+    if (todo) {
+      setTodoToDelete(todo);
+    }
+  };
+
+  const handleDeleteConfirm = async (id: string) => {
+    setIsDeleting(true);
+    try {
       setPendingDelete(id);
       // Form submission will trigger the action
+    } catch (error) {
+      console.error("Failed to delete todo:", error);
+      throw error; // Re-throw so the dialog can handle the error
+    } finally {
+      setIsDeleting(false);
+      setTodoToDelete(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setTodoToDelete(null);
   };
 
   const handleCreateSubmit = (data: TodoCreateData) => {
@@ -361,6 +382,14 @@ export default function Index() {
             />
           )}
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <DeleteConfirmationDialog
+          isOpen={todoToDelete !== null}
+          todo={todoToDelete}
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+        />
     </div>
   );
 }
