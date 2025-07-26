@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { ErrorHandler } from '../lib/state-errors';
 
 export interface Notification {
   id: string;
@@ -201,37 +200,3 @@ export function NotificationProvider({
   );
 }
 
-// Deletion feedback specific hook
-export function useDeletionFeedback() {
-  const { showNotification, clearNotifications, notifications, hasActiveNotifications } = useNotifications();
-
-  const showSuccessNotification = useCallback((message: string, options: NotificationOptions = {}) => {
-    return showNotification(message, 'success', {
-      autoDismiss: true,
-      duration: 3000,
-      ariaLive: 'polite',
-      screenReaderAnnouncement: true,
-      ...options,
-    });
-  }, [showNotification]);
-
-  const showErrorNotification = useCallback((message: string, options: NotificationOptions = {}) => {
-    const errorDetails = options.error ? ErrorHandler.handleError(options.error) : null;
-    
-    return showNotification(message, 'error', {
-      retryable: errorDetails?.retryable ?? false,
-      ariaLive: 'assertive',
-      screenReaderAnnouncement: true,
-      priority: 'high',
-      ...options,
-    });
-  }, [showNotification]);
-
-  return {
-    showSuccessNotification,
-    showErrorNotification,
-    clearNotifications,
-    notifications: notifications.filter(n => n.type === 'success' || n.type === 'error'),
-    hasActiveNotifications,
-  };
-}

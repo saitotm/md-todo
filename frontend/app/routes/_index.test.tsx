@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { createRemixStub } from '@remix-run/testing';
 import IndexRoute from './_index';
 import type { Todo } from '../lib/types';
+import { NotificationProvider } from '../components/NotificationProvider';
 
 
 describe('Index Route Tests', () => {
@@ -40,7 +41,11 @@ describe('Index Route Tests', () => {
         },
       });
 
-      render(<RemixStub />);
+      render(
+        <NotificationProvider>
+          <RemixStub />
+        </NotificationProvider>
+      );
       
       // Since loader is async, wait for the content to appear
       expect(await screen.findByText('Your Todos')).toBeInTheDocument();
@@ -61,7 +66,11 @@ describe('Index Route Tests', () => {
         },
       });
 
-      render(<RemixStub />);
+      render(
+        <NotificationProvider>
+          <RemixStub />
+        </NotificationProvider>
+      );
       
       expect(await screen.findByText('Total: 2')).toBeInTheDocument();
       expect(await screen.findByText('Completed: 1')).toBeInTheDocument();
@@ -85,7 +94,11 @@ describe('Index Route Tests', () => {
         },
       });
 
-      render(<RemixStub />);
+      render(
+        <NotificationProvider>
+          <RemixStub />
+        </NotificationProvider>
+      );
       
       expect(await screen.findByText('Failed to load todos')).toBeInTheDocument();
       expect(await screen.findByText('Your Todos')).toBeInTheDocument();
@@ -105,7 +118,11 @@ describe('Index Route Tests', () => {
         },
       });
 
-      render(<RemixStub />);
+      render(
+        <NotificationProvider>
+          <RemixStub />
+        </NotificationProvider>
+      );
       
       expect(await screen.findByText('Total: 0')).toBeInTheDocument();
       expect(await screen.findByText('No todos yet. Create your first todo to get started!')).toBeInTheDocument();
