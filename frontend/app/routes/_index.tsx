@@ -130,7 +130,6 @@ export default function Index() {
   const [sortBy, setSortBy] = useState<SortType>("created_at_desc");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [todoToDelete, setTodoToDelete] = useState<Todo | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleToggle = (id: string) => {
     setPendingToggle(id);
@@ -145,7 +144,6 @@ export default function Index() {
   };
 
   const handleDeleteConfirm = async (id: string) => {
-    setIsDeleting(true);
     try {
       setPendingDelete(id);
       // Form submission will trigger the action
@@ -153,7 +151,6 @@ export default function Index() {
       console.error("Failed to delete todo:", error);
       throw error; // Re-throw so the dialog can handle the error
     } finally {
-      setIsDeleting(false);
       setTodoToDelete(null);
     }
   };

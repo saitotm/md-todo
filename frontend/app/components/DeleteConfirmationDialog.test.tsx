@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
@@ -459,8 +459,7 @@ describe('DeleteConfirmationDialog Component', () => {
       expect(cancelButton).toHaveFocus();
     });
 
-    it('allows direct focus on buttons', async () => {
-      const user = userEvent.setup();
+    it('allows direct focus on buttons', () => {
       render(
         <DeleteConfirmationDialog
           isOpen={true}
@@ -584,7 +583,7 @@ describe('DeleteConfirmationDialog Component', () => {
       render(
         <DeleteConfirmationDialog
           isOpen={true}
-          todo={null as any}
+          todo={null}
           onConfirm={mockOnConfirm}
           onCancel={mockOnCancel}
         />
@@ -595,7 +594,7 @@ describe('DeleteConfirmationDialog Component', () => {
     });
 
     it('handles undefined todo title gracefully', () => {
-      const todoWithoutTitle = { ...mockTodo, title: undefined as any };
+      const todoWithoutTitle = { ...mockTodo, title: '' };
 
       render(
         <DeleteConfirmationDialog
