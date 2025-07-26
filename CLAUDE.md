@@ -485,6 +485,22 @@ API_URL=http://localhost:8000
    - 秘密情報をコミットしない
    - 依存関係の脆弱性を定期的にチェック
 
+## ドキュメント
+
+プロジェクトの詳細なドキュメントは以下の場所にあります：
+
+### 開発ドキュメント
+
+- `docs/ARCHITECTURE.md` - システムアーキテクチャ詳細
+- `docs/SETUP.md` - 開発環境セットアップガイド
+- `docs/task-forms-documentation.md` - タスク作成・編集機能ドキュメント
+
+### コンポーネントドキュメント
+
+- `frontend/docs/FRONTEND_COMPONENTS.md` - フロントエンドコンポーネント詳細
+- `frontend/docs/MARKDOWN_PROCESSING.md` - Markdown処理機能詳細
+- `frontend/docs/TODO_LIST_FUNCTIONALITY.md` - Todoリスト機能詳細
+
 ## 参考リンク
 
 - [React 公式ドキュメント](https://react.dev/)
