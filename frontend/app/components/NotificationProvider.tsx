@@ -82,9 +82,9 @@ export function NotificationProvider({
       id,
       type,
       message,
-      autoDismiss: options.autoDismiss ?? (type === 'success'),
-      duration: options.duration ?? (type === 'success' ? 3000 : 5000),
-      persistent: options.persistent ?? (type === 'error'),
+      autoDismiss: options.autoDismiss ?? true,
+      duration: options.duration ?? (type === 'success' ? 3000 : type === 'error' ? 8000 : 5000),
+      persistent: options.persistent ?? false,
       retryable: options.retryable ?? false,
       priority,
       ariaLive: options.ariaLive ?? (type === 'error' ? 'assertive' : 'polite'),
@@ -219,7 +219,6 @@ export function useDeletionFeedback() {
     const errorDetails = options.error ? ErrorHandler.handleError(options.error) : null;
     
     return showNotification(message, 'error', {
-      persistent: !errorDetails?.retryable,
       retryable: errorDetails?.retryable ?? false,
       ariaLive: 'assertive',
       screenReaderAnnouncement: true,
