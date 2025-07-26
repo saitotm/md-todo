@@ -205,7 +205,26 @@ describe('API Client', () => {
   describe('deleteTodo', () => {
     const todoId = '018c2e65-4b7f-7000-8000-000000000001';
 
-    it('should delete a todo successfully', async () => {
+    it('should delete a todo successfully with HTTP 204', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 204,
+        json: async () => {
+          throw new Error('No content');
+        },
+      });
+
+      await deleteTodo(todoId);
+
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiUrl}/todos/${todoId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    });
+
+    it('should delete a todo successfully with HTTP 200 (legacy)', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
