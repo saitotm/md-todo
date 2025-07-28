@@ -5,8 +5,7 @@ import { useState, useEffect } from "react";
 import { TodoList, FilterType, SortType } from "../components/TodoList";
 import { TaskCreateForm } from "../components/TaskCreateForm";
 import { DeleteConfirmationDialog } from "../components/DeleteConfirmationDialog";
-import { NotificationProvider, useDeletionFeedback } from "../components/NotificationProvider";
-import { NotificationDisplay } from "../components/NotificationDisplay";
+import { useNotifications } from "../components/NotificationProvider";
 import {
   getTodos,
   updateTodo,
@@ -120,7 +119,7 @@ export async function action({ request }: ActionFunctionArgs) {
 function TodoApp() {
   const { todos, error: loadError } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
-  const { showSuccessNotification, showErrorNotification, clearNotifications } = useDeletionFeedback();
+  const { showNotification, clearNotifications } = useNotifications();
   const [pendingToggle, setPendingToggle] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [pendingCreate, setPendingCreate] = useState<TodoCreateData | null>(
@@ -151,7 +150,7 @@ function TodoApp() {
   const handleDeleteConfirm = async (id: string) => {
     const todoToDeleteData = todos?.find((t: Todo) => t.id === id);
     if (!todoToDeleteData) {
-      showErrorNotification("Task not found");
+      showNotification("Task not found", "error");
       setTodoToDelete(null);
       return;
     }
@@ -164,8 +163,9 @@ function TodoApp() {
     } catch (error) {
       console.error("Failed to delete todo:", error);
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-      showErrorNotification(
+      showNotification(
         `Failed to delete task "${todoToDeleteData.title}". ${errorMessage}`,
+        "error",
         { 
           error: error instanceof Error ? error : new Error(errorMessage),
           retryable: true,
@@ -193,8 +193,9 @@ function TodoApp() {
       const errorMessage = actionData.error;
       const todoTitle = lastDeletedTodo?.title || 'Unknown task';
       
-      showErrorNotification(
+      showNotification(
         `Failed to delete task "${todoTitle}". ${errorMessage}`,
+        "error",
         { 
           error: new StateError(errorMessage, { type: 'server' }),
           retryable: false
@@ -202,15 +203,90 @@ function TodoApp() {
       );
       setPendingDelete(null);
       setLastDeletedTodo(null);
+    } else if (actionData?.error && pendingToggle) {
+      // Error occurred during toggle
+      const errorMessage = actionData.error;
+      const todo = todos?.find((t: Todo) => t.id === pendingToggle);
+      const todoTitle = todo?.title || 'Unknown task';
+      const action = todo?.completed ? 'mark as incomplete' : 'mark as complete';
+      
+      showNotification(
+        `Failed to ${action} task "${todoTitle}". ${errorMessage}`,
+        "error",
+        { 
+          error: new StateError(errorMessage, { type: 'server' }),
+          retryable: true,
+          onRetry: () => handleToggle(pendingToggle)
+        }
+      );
+      setPendingToggle(null);
+    } else if (actionData?.error && pendingEdit) {
+      // Error occurred during edit
+      const errorMessage = actionData.error;
+      const todo = todos?.find((t: Todo) => t.id === pendingEdit?.id);
+      const todoTitle = todo?.title || 'Unknown task';
+      
+      showNotification(
+        `Failed to update task "${todoTitle}". ${errorMessage}`,
+        "error",
+        { 
+          error: new StateError(errorMessage, { type: 'server' }),
+          retryable: true,
+          onRetry: () => handleEdit(todo!, pendingEdit.data)
+        }
+      );
+      setPendingEdit(null);
+    } else if (actionData?.error && pendingCreate) {
+      // Error occurred during creation
+      const errorMessage = actionData.error;
+      const taskTitle = pendingCreate?.title || 'New task';
+      
+      showNotification(
+        `Failed to create task "${taskTitle}". ${errorMessage}`,
+        "error",
+        { 
+          error: new StateError(errorMessage, { type: 'server' }),
+          retryable: true,
+          onRetry: () => handleCreateSubmit(pendingCreate)
+        }
+      );
+      setPendingCreate(null);
     } else if (!actionData?.error && lastDeletedTodo && !pendingDelete) {
       // Successful deletion (no error and we had a pending delete that completed)
       const todoTitle = lastDeletedTodo.title || 'Task';
-      showSuccessNotification(
-        `Task "${todoTitle}" has been deleted successfully`
+      showNotification(
+        `Task "${todoTitle}" has been deleted successfully`,
+        "success"
       );
       setLastDeletedTodo(null);
     }
-  }, [actionData, pendingDelete, lastDeletedTodo, showSuccessNotification, showErrorNotification]);
+    
+    // Handle successful task creation
+    if (!actionData?.error && pendingCreate) {
+      showNotification(
+        `Task "${pendingCreate?.title || 'New task'}" has been created successfully`,
+        "success"
+      );
+      setPendingCreate(null);
+    }
+    
+    // Handle task toggle completion (success case - no notification needed)
+    if (!actionData?.error && pendingToggle) {
+      setPendingToggle(null);
+    }
+    
+    // Handle successful task edit
+    if (!actionData?.error && pendingEdit) {
+      const todo = todos?.find((t: Todo) => t.id === pendingEdit?.id);
+      if (todo) {
+        showNotification(
+          `Task "${todo.title}" has been updated successfully`,
+          "success"
+        );
+      }
+      setPendingEdit(null);
+    }
+  }, [actionData, pendingDelete, lastDeletedTodo, pendingCreate, pendingToggle, pendingEdit, todos, showNotification]);
 
   const handleCreateCancel = () => {
     setShowCreateForm(false);
@@ -224,7 +300,6 @@ function TodoApp() {
 
   return (
     <div className="py-6">
-      <NotificationDisplay position="top-right" />
       {/* Statistics Bar */}
       <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
         <div className="flex items-center justify-between">
@@ -441,9 +516,5 @@ function TodoApp() {
 }
 
 export default function Index() {
-  return (
-    <NotificationProvider>
-      <TodoApp />
-    </NotificationProvider>
-  );
+  return <TodoApp />;
 }

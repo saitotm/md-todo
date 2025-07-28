@@ -7,6 +7,8 @@ import {
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
 import { Layout as AppLayout } from "./components/Layout";
+import { NotificationProvider } from "./components/NotificationProvider";
+import { NotificationDisplay } from "./components/NotificationDisplay";
 
 import "./tailwind.css";
 import "prismjs/themes/prism-tomorrow.css";
@@ -45,9 +47,12 @@ function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Layout>
-      <AppLayout>
-        <Outlet />
-      </AppLayout>
+      <NotificationProvider>
+        <AppLayout>
+          <Outlet />
+        </AppLayout>
+        <NotificationDisplay />
+      </NotificationProvider>
     </Layout>
   );
 }
