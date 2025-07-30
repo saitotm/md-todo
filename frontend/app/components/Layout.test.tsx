@@ -44,11 +44,11 @@ describe('Layout Component', () => {
       expect(screen.getByAltText('MD-Todo Logo')).toBeInTheDocument();
     });
 
-    it('centers the logo and title in header', () => {
+    it('aligns logo and title to the left in header', () => {
       render(<Layout>{mockChildren}</Layout>);
       
       const headerContent = screen.getByRole('banner').querySelector('div');
-      expect(headerContent).toHaveClass('justify-center');
+      expect(headerContent).toHaveClass('justify-start');
     });
 
     it('applies sticky positioning to header', () => {

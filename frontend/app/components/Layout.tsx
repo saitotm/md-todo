@@ -19,7 +19,7 @@ export function Layout({ children }: LayoutProps) {
 
       {/* Header */}
       <header role="banner" className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-center h-16 md:h-20">
+        <div className="flex items-center justify-start h-16 md:h-20">
           {/* Logo and Title */}
           <div className="flex items-center space-x-3">
             <img
