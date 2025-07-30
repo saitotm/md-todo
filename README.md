@@ -1,6 +1,10 @@
-# MD-Todo
-
-A modern web-based todo application that allows users to create, manage, and organize tasks using Markdown formatting. Experience the power of rich text formatting in your task management workflow.
+<div align="center">
+  <img src="frontend/public/logo.svg" alt="MD-Todo Logo" width="120" height="120">
+  
+  # MD-Todo
+  
+  A modern web-based todo application that allows users to create, manage, and organize tasks using Markdown formatting. Experience the power of rich text formatting in your task management workflow.
+</div>
 
 ## Features
 
