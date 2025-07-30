@@ -15,6 +15,16 @@
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **Real-time Updates**: Live preview of Markdown content as you type
 
+## Screenshots
+
+### Main Interface
+
+The application provides a clean and intuitive interface for managing your tasks with Markdown support:
+
+![Main View](screenshots/main-view.png)
+
+*The main application interface showing the task list and Markdown editor with live preview functionality.*
+
 ## Architecture
 
 This application follows a modern full-stack architecture:
