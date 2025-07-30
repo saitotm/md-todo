@@ -109,8 +109,8 @@ export function TaskCreateForm({
     [title, content, isValid, isSubmitting, onSubmit]
   );
 
-  // Handle form submission via Enter key
-  const handleKeyDown = useCallback(
+  // Handle form submission via Enter key in content field only
+  const handleContentKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter" && !e.shiftKey && isValid) {
         e.preventDefault();
@@ -118,6 +118,17 @@ export function TaskCreateForm({
       }
     },
     [isValid, handleSubmit]
+  );
+
+  // Handle Enter key in title field - prevent form submission
+  const handleTitleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        // Do nothing - just prevent form submission
+      }
+    },
+    []
   );
 
   // Handle cancel with confirmation if there are unsaved changes
@@ -228,7 +239,7 @@ export function TaskCreateForm({
           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
           value={title}
           onChange={handleTitleChange}
-          onKeyDown={handleKeyDown}
+          onKeyDown={handleTitleKeyDown}
           onBlur={() => setTitleTouched(true)}
           aria-label="Task title"
           aria-describedby="title-help"
@@ -314,6 +325,7 @@ export function TaskCreateForm({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
                 value={content}
                 onChange={handleContentChange}
+                onKeyDown={handleContentKeyDown}
                 onBlur={() => setContentTouched(true)}
                 placeholder="Enter task description using Markdown syntax..."
                 aria-label="Task content"
@@ -346,6 +358,7 @@ export function TaskCreateForm({
               style={{ display: isPreviewMode ? "none" : "block" }}
               value={content}
               onChange={handleContentChange}
+              onKeyDown={handleContentKeyDown}
               onBlur={() => setContentTouched(true)}
               placeholder="Enter task description using Markdown syntax..."
               aria-label="Task content"
