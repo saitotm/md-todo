@@ -109,15 +109,13 @@ export function TaskCreateForm({
     [title, content, isValid, isSubmitting, onSubmit]
   );
 
-  // Handle form submission via Enter key in content field only
+  // Handle Enter key in content field - allow new lines, prevent form submission
   const handleContentKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && !e.shiftKey && isValid) {
-        e.preventDefault();
-        handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
-      }
+    () => {
+      // Allow Enter key to create new lines in textarea
+      // Do not submit form on Enter in content field
     },
-    [isValid, handleSubmit]
+    []
   );
 
   // Handle Enter key in title field - prevent form submission
