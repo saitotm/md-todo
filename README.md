@@ -6,6 +6,8 @@
   A modern web-based todo application that allows users to create, manage, and organize tasks using Markdown formatting. Experience the power of rich text formatting in your task management workflow.
 </div>
 
+![Main View](screenshots/main-view.png)
+
 ## Features
 
 - **Markdown Support**: Write tasks using full Markdown syntax with real-time preview
@@ -14,16 +16,6 @@
 - **Syntax Highlighting**: Code blocks are automatically highlighted for better readability
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **Real-time Updates**: Live preview of Markdown content as you type
-
-## Screenshots
-
-### Main Interface
-
-The application provides a clean and intuitive interface for managing your tasks with Markdown support:
-
-![Main View](screenshots/main-view.png)
-
-*The main application interface showing the task list and Markdown editor with live preview functionality.*
 
 ## Architecture
 
