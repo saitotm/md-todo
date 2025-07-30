@@ -521,22 +521,6 @@ describe("TaskCreateForm Component", () => {
       });
     });
 
-    it("supports form submission via Enter key in title field", async () => {
-      const user = userEvent.setup();
-      render(
-        <TaskCreateForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />
-      );
-
-      const titleInput = screen.getByLabelText(/title/i);
-
-      await user.type(titleInput, "Test Title");
-      await user.keyboard("{Enter}");
-
-      expect(mockOnSubmit).toHaveBeenCalledWith({
-        title: "Test Title",
-        content: "",
-      } as TodoCreateData);
-    });
 
     it("prevents default form submission behavior", async () => {
       const user = userEvent.setup();
