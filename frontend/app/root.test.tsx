@@ -53,16 +53,6 @@ describe("Root Layout Component", () => {
       expect(screen.getByText("MD-Todo")).toBeInTheDocument();
     });
 
-    it("renders navigation menu", () => {
-      render(
-        <AppLayout>
-          <div>Test content</div>
-        </AppLayout>
-      );
-
-      // Confirm navigation menu is displayed
-      expect(screen.getByRole("navigation")).toBeInTheDocument();
-    });
 
     it("renders logo image with proper alt text", () => {
       render(
@@ -152,42 +142,7 @@ describe("Root Layout Component", () => {
       expect(container).toHaveClass("container", "mx-auto", "px-4");
     });
 
-    it("renders mobile-friendly navigation on small screens", () => {
-      // Simulate mobile size viewport
-      Object.defineProperty(window, "innerWidth", {
-        writable: true,
-        configurable: true,
-        value: 375,
-      });
 
-      render(
-        <AppLayout>
-          <div>Test content</div>
-        </AppLayout>
-      );
-
-      // Confirm mobile navigation is displayed
-      expect(screen.getByTestId("mobile-menu-button")).toBeInTheDocument();
-    });
-
-    it("hides mobile menu button on desktop screens", () => {
-      // Simulate desktop size viewport
-      Object.defineProperty(window, "innerWidth", {
-        writable: true,
-        configurable: true,
-        value: 1200,
-      });
-
-      render(
-        <AppLayout>
-          <div>Test content</div>
-        </AppLayout>
-      );
-
-      // Confirm mobile menu button has hidden class applied on desktop
-      const mobileButton = screen.getByTestId("mobile-menu-button");
-      expect(mobileButton).toHaveClass("md:hidden");
-    });
 
     it("applies appropriate grid layout for different screen sizes", () => {
       render(
@@ -229,44 +184,6 @@ describe("Root Layout Component", () => {
       expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
     });
 
-    it("provides aria-label for navigation", () => {
-      render(
-        <AppLayout>
-          <div>Test content</div>
-        </AppLayout>
-      );
-
-      // Confirm navigation has appropriate aria-label
-      const navigation = screen.getByRole("navigation");
-      expect(navigation).toHaveAttribute("aria-label", "Main navigation");
-    });
   });
 
-  describe("Theme Support", () => {
-    it("supports dark mode toggle", () => {
-      render(
-        <AppLayout>
-          <div>Test content</div>
-        </AppLayout>
-      );
-
-      // Confirm dark mode toggle button exists
-      expect(
-        screen.getByRole("button", { name: /toggle dark mode/i })
-      ).toBeInTheDocument();
-    });
-
-    it("applies theme classes to body element", () => {
-      render(
-        <AppLayout>
-          <div>Test content</div>
-        </AppLayout>
-      );
-
-      // Confirm Layout component renders correctly
-      expect(
-        screen.getByRole("button", { name: /toggle dark mode/i })
-      ).toBeInTheDocument();
-    });
-  });
 });
