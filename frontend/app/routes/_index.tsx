@@ -364,7 +364,7 @@ function TodoApp() {
           <p className="text-gray-600 dark:text-gray-400">
             {(todos?.length || 0) === 0
               ? "No todos yet. Create your first todo to get started!"
-              : "Click on checkboxes to mark todos as complete, or use the delete button to remove them."}
+              : ""}
           </p>
         </div>
 
